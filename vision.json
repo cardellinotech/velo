@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "createdAt": "2026-03-20",
+  "aboutYou": {
+    "name": "Dominic",
+    "expertise": "DevOps Engineer",
+    "background": "Freelancer im DevOps-Bereich, entwickelt in der Freizeit eigene Anwendungen (z.B. Aura, eine iOS/Android App für seine Frau). Tiefes Verständnis für Tooling, Infrastruktur und Developer Experience."
+  },
+  "purpose": {
+    "whoYouHelp": "Technische Freelancer (primär er selbst), die für mehrere Kunden arbeiten und ihre Projektarbeit und Zeit tracken müssen.",
+    "problem": "Kein integriertes Tool das Projektmanagement, Zeiterfassung und Abrechnung verbindet. Aktuell ein Mix aus Notizen und Bauchgefühl — am Monatsende fehlt die Übersicht über geleistete Stunden pro Kunde.",
+    "desiredTransformation": "Von chaotischem Bauchgefühl zu strukturierter Projektverwaltung mit automatischer Zeiterfassung und sauberer Kundenabrechnung.",
+    "whyYou": "Als DevOps Freelancer kennt er den Pain aus erster Hand. Er weiß, was gutes Tooling ausmacht und welche Features wirklich gebraucht werden — ohne Enterprise-Bloat."
+  },
+  "product": {
+    "name": "Velo",
+    "oneLiner": "Projektmanagement mit integriertem Time-Tracking und Abrechnung — ohne Bloat, für Freelancer.",
+    "howItWorks": "Nutzer erstellen Projekte, legen Epics und Aufgaben (Stories, Tasks, Bugs, Incidents) an, verwalten sie auf einem Kanban Board und tracken ihre Zeit pro Aufgabe. Am Monatsende generiert Velo eine Abrechnungsübersicht der getrackten Stunden pro Kunde/Projekt.",
+    "capabilities": [
+      "Projekte anlegen und verwalten",
+      "Epics innerhalb von Projekten erstellen",
+      "Flexible Aufgabentypen: Stories, Tasks, Bugs, Incidents",
+      "Optionale Epic-Zuordnung für Aufgaben",
+      "Integrierter Time-Tracker pro Aufgabe",
+      "Kanban Board View mit Drag & Drop",
+      "Abrechnungsübersicht: gearbeitete Zeit pro Kunde/Projekt"
+    ],
+    "platform": "Web-App (Next.js)",
+    "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",
+    "magicMoments": [
+      "Aufgabe auf dem Kanban Board verschieben und sehen, dass der Timer nahtlos mitläuft.",
+      "Am Monatsende auf 'Abrechnung erstellen' klicken und eine saubere Übersicht der getrackten Stunden pro Kunde bekommen."
+    ]
+  },
+  "audience": {
+    "primaryUser": "Technische Freelancer (Entwickler, DevOps Engineers, Designer), die für mehrere Kunden gleichzeitig arbeiten.",
+    "secondaryUsers": [
+      "Kleine Agenturen (2-5 Leute) als potenzielle zukünftige Zielgruppe"
+    ],
+    "currentAlternatives": "Kein richtiges Tool — ein Mix aus Notizen und Bauchgefühl. Zeiterfassung fällt oft hinten runter.",
+    "frustrations": [
+      "Jira ist zu komplex und teuer für Einzelpersonen",
+      "Time-Tracking Tools (Toggl etc.) sind getrennt vom Projektmanagement",
+      "Am Monatsende manuell Stunden zusammensuchen ist fehleranfällig",
+      "Bestehende Tools sind für Enterprise-Teams gebaut, nicht für Freelancer"
+    ]
+  },
+  "businessIntent": {
+    "revenueModel": "Keine Monetarisierung geplant — persönliches Tool",
+    "ninetyDayGoal": "Ein funktionierendes Tool das Dominic täglich für seine Freelancer-Arbeit und persönlichen Projekte (z.B. Aura) nutzt.",
+    "sixMonthVision": "Stabiles, zuverlässiges Projektmanagement mit vollständigem Time-Tracking und Abrechnungsfunktion.",
+    "constraints": "Solo-Entwickler, Freizeit-Projekt neben Freelancer-Arbeit. Muss pragmatisch und inkrementell baubar sein.",
+    "gtm": "Kein Go-to-Market nötig — persönliches Tool. Eventuell später Open Source."
+  },
+  "feeling": {
+    "brandPersonality": "Modern, clean, freundlich aber professionell. Wie Notion oder Todoist — aufgeräumt und einladend ohne verspielt zu sein.",
+    "visualMood": "Hell, aufgeräumt, professionell. Klare Typografie, viel Whitespace, subtile Farben.",
+    "toneOfVoice": "Direkt, freundlich, technisch-kompetent. Keine Marketing-Sprache, kein Enterprise-Jargon.",
+    "antiPatterns": [
+      "Kein Feature-Monster wie Jira — keine 50 Konfigurationsoptionen pro Aufgabe",
+      "Nicht bunt und verspielt wie Trello oder Monday — keine Sticker, Confetti oder Gamification",
+      "Nicht langsam und aufgebläht — kein 5-Sekunden-Laden, keine RAM-fressende App"
+    ]
+  },
+  "techStack": {
+    "frontend": "Next.js (React)",
+    "backend": "Convex",
+    "database": "Convex (integriert)",
+    "auth": "Convex Auth",
+    "payments": "Keine (persönliches Tool)",
+    "platform": "Web-App"
+  },
+  "tooling": {
+    "codingAgent": "Claude (Cowork/PLAID)"
+  }
+}
