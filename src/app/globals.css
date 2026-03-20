@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary: #4F46E5;
+  --color-primary-hover: #4338CA;
+  --color-surface: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  /* Task type badge colors */
+  --color-badge-bug: #FEE2E2;
+  --color-badge-bug-text: #991B1B;
+  --color-badge-story: #DBEAFE;
+  --color-badge-story-text: #1E40AF;
+  --color-badge-task: #F3F4F6;
+  --color-badge-task-text: #374151;
+  --color-badge-incident: #FFEDD5;
+  --color-badge-incident-text: #9A3412;
+
+  /* Fonts */
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+
+  /* Layout */
+  --width-sidebar: 240px;
+  --max-width-content: 1280px;
+  --min-width-kanban-col: 280px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--color-text-primary, #111827);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
