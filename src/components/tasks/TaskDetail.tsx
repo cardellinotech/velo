@@ -4,15 +4,18 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Trash2, User } from "lucide-react";
+import { ArrowLeft, ChevronDown, Clock, Trash2, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { TimerControl } from "@/components/timer/TimerControl";
+import { ManualTimeEntry } from "@/components/timer/ManualTimeEntry";
 import { TaskTypeBadge } from "./TaskTypeBadge";
 import { useToast } from "@/hooks/useToast";
 import { TASK_STATUSES, TASK_TYPES, PRIORITIES } from "@/lib/constants";
+import { formatDuration, formatDate } from "@/lib/formatTime";
 
 interface TaskDetailProps {
   task: Doc<"tasks">;
@@ -34,9 +37,13 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
   const removeTask = useMutation(api.tasks.remove);
   const epics = useQuery(api.epics.listByProject, { projectId: task.projectId });
 
+  const timeEntries = useQuery(api.timeEntries.listByTask, { taskId: task._id });
+  const removeEntry = useMutation(api.timeEntries.remove);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [manualEntryOpen, setManualEntryOpen] = useState(false);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -173,6 +180,57 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
             )}
           </div>
 
+          {/* Time Tracking */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+                Time Tracking
+              </p>
+              <button
+                onClick={() => setManualEntryOpen(true)}
+                className="text-xs text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <Clock className="w-3 h-3" />
+                Add manual
+              </button>
+            </div>
+
+            <TimerControl taskId={task._id} variant="full" />
+
+            {timeEntries && timeEntries.length > 0 && (
+              <p className="text-xs text-text-secondary">
+                Total:{" "}
+                <span className="font-medium text-text-primary font-mono">
+                  {formatDuration(timeEntries.reduce((sum, e) => sum + (e.duration ?? 0), 0))}
+                </span>
+              </p>
+            )}
+
+            {timeEntries === undefined && (
+              <div className="animate-pulse space-y-1">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="h-9 bg-border rounded" />
+                ))}
+              </div>
+            )}
+            {timeEntries && timeEntries.length === 0 && (
+              <p className="text-xs text-text-secondary">No time logged yet.</p>
+            )}
+            {timeEntries && timeEntries.map((entry) => (
+              <TimeEntryRow
+                key={entry._id}
+                entry={entry}
+                onRemove={() => removeEntry({ timeEntryId: entry._id })}
+              />
+            ))}
+          </div>
+
+          <ManualTimeEntry
+            open={manualEntryOpen}
+            onClose={() => setManualEntryOpen(false)}
+            taskId={task._id}
+          />
+
           {/* Delete */}
           <div className="pt-4 border-t border-border mt-auto">
             <Button
@@ -293,6 +351,40 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
           </div>
         </div>
       </Dialog>
+    </div>
+  );
+}
+
+function TimeEntryRow({
+  entry,
+  onRemove,
+}: {
+  entry: Doc<"timeEntries">;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0 text-sm group">
+      <span className="text-text-secondary text-xs w-20 shrink-0">
+        {formatDate(entry.startTime)}
+      </span>
+      <span className="font-mono text-xs tabular-nums text-text-primary">
+        {entry.duration !== undefined ? formatDuration(entry.duration) : "—"}
+      </span>
+      {entry.description && (
+        <span className="text-text-secondary text-xs truncate flex-1">
+          {entry.description}
+        </span>
+      )}
+      {entry.isManual && !entry.description && (
+        <span className="text-xs text-text-secondary italic flex-1">manual</span>
+      )}
+      <button
+        onClick={onRemove}
+        className="opacity-0 group-hover:opacity-100 p-1 text-text-secondary hover:text-red-600 transition-colors rounded shrink-0"
+        aria-label="Delete time entry"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
     </div>
   );
 }

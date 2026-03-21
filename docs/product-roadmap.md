@@ -152,35 +152,35 @@
 
 **Agent prompt:** "Build the time tracking system for Velo. Implement Convex mutations for time entries (start, stop, manual create). Build the TimerControl component (play/pause/stop with live elapsed time display). Add automatic timer behavior when tasks move to 'In Progress' on the Kanban board. Build a global active timer indicator in the header. Handle edge cases: only one timer at a time, browser close with running timer, stopping timer when moving task away from In Progress."
 
-- [ ] **TASK-027** — Implement time entry queries and mutations
+- [x] **TASK-027** — Implement time entry queries and mutations
   Files: `convex/timeEntries.ts`
   Notes: Queries: `listByTask`, `getActive` (running timer for user), `listByDateRange`. Mutations: `start` (auto-stop any running timer first), `stop` (compute duration), `createManual`, `update`, `delete`. Validate no negative durations. Store `projectId` denormalized for billing.
 
-- [ ] **TASK-028** — Build TimerControl component
+- [x] **TASK-028** — Build TimerControl component
   Files: `src/components/timer/TimerControl.tsx`, `src/components/timer/TimerDisplay.tsx`
   Notes: Play/stop buttons. TimerDisplay shows elapsed time in HH:MM:SS format using JetBrains Mono font. Updates every second via `setInterval` (client-side, computed from startTime). Green pulsing dot when running. Compact variant for task cards, full variant for task detail.
 
-- [ ] **TASK-029** — Build useTimer and useActiveTimer hooks
+- [x] **TASK-029** — Build useTimer and useActiveTimer hooks
   Files: `src/hooks/useTimer.ts`, `src/hooks/useActiveTimer.ts`
   Notes: `useTimer(taskId)`: manages timer state for a specific task (start, stop, current duration). `useActiveTimer()`: subscribes to the globally active timer via `timeEntries.getActive` query. Returns active timer info or null.
 
-- [ ] **TASK-030** — Integrate timer with task cards and detail view
+- [x] **TASK-030** — Integrate timer with task cards and detail view
   Files: `src/components/kanban/TaskCard.tsx`, `src/components/tasks/TaskDetail.tsx`
   Notes: TaskCard: show small timer indicator if this task has a running timer. TaskDetail: show full TimerControl with time entries list below it. Each time entry shows: date, duration, description, edit/delete buttons.
 
-- [ ] **TASK-031** — Add automatic timer on Kanban drag
+- [x] **TASK-031** — Add automatic timer on Kanban drag
   Files: `src/components/kanban/KanbanBoard.tsx`, `convex/tasks.ts`
   Notes: When task moves to "In Progress": call `timeEntries.start`. When task moves away from "In Progress": call `timeEntries.stop` (if timer running for that task). Show toast: "Timer started for [task]" / "Timer stopped. [duration] logged." Handle case where another timer is already running.
 
-- [ ] **TASK-032** — Build global active timer indicator
+- [x] **TASK-032** — Build global active timer indicator
   Files: `src/components/layout/Header.tsx`, `src/components/timer/ActiveTimerBar.tsx`
   Notes: In the header: if a timer is running, show a compact bar with task name, project name, elapsed time, and stop button. Click task name to navigate to task detail. Green accent. Always visible across all pages.
 
-- [ ] **TASK-033** — Build manual time entry form
+- [x] **TASK-033** — Build manual time entry form
   Files: `src/components/timer/ManualTimeEntry.tsx`
   Notes: Dialog form: date picker, start time, end time (or duration), optional description. Validate end > start. Used from task detail view. Show warning if entry overlaps with existing entries (but allow it).
 
-- [ ] **TASK-034** — Handle timer edge cases
+- [x] **TASK-034** — Handle timer edge cases
   Files: `convex/timeEntries.ts`, `src/components/kanban/KanbanBoard.tsx`
   Notes: Implement: only one active timer at a time (auto-stop previous), cross-midnight timers, delete task with running timer (stop first, then confirm), browser reconnection (timer state is server-side, client computes display from startTime).
 

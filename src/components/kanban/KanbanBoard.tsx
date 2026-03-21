@@ -30,6 +30,8 @@ export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps)
   const epics = useQuery(api.epics.listByProject, { projectId });
   const moveToColumn = useMutation(api.tasks.moveToColumn);
   const reorder = useMutation(api.tasks.reorder);
+  const startTimer = useMutation(api.timeEntries.start);
+  const stopForTask = useMutation(api.timeEntries.stopForTask);
 
   if (tasks === undefined || epics === undefined) {
     return (
@@ -108,9 +110,26 @@ export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps)
           newStatus: destStatus,
           destinationIndex: destIndex,
         });
-        toast.success(
-          `Task moved to ${TASK_STATUSES[destStatus]}`
-        );
+        toast.success(`Task moved to ${TASK_STATUSES[destStatus]}`);
+
+        // Auto-timer: start when entering in_progress
+        if (destStatus === "in_progress") {
+          try {
+            await startTimer({ taskId });
+            toast.info("Timer started automatically");
+          } catch {
+            // Non-fatal — don't surface timer errors over the move success
+          }
+        }
+
+        // Auto-timer: stop when leaving in_progress
+        if (sourceStatus === "in_progress" && destStatus !== "in_progress") {
+          try {
+            await stopForTask({ taskId });
+          } catch {
+            // Non-fatal
+          }
+        }
       }
     } catch {
       toast.error("Failed to move task. Please try again.");

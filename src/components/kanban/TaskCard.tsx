@@ -3,6 +3,9 @@
 import { Draggable } from "@hello-pangea/dnd";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
+import { TimerControl } from "@/components/timer/TimerControl";
+import { TimerDisplay } from "@/components/timer/TimerDisplay";
+import { useTimer } from "@/hooks/useTimer";
 import { PRIORITIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +19,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, index, epicName, epicColor, onTaskClick }: TaskCardProps) {
   const priority = PRIORITIES[task.priority];
+  const { isRunning, activeEntry } = useTimer(task._id);
 
   return (
     <Draggable draggableId={task._id} index={index}>
@@ -64,6 +68,19 @@ export function TaskCard({ task, index, epicName, epicColor, onTaskClick }: Task
                 title={priority.label}
                 aria-label={`Priority: ${priority.label}`}
               />
+            </div>
+
+            {/* Timer row */}
+            <div className="mt-1.5 flex items-center justify-between">
+              {isRunning && activeEntry ? (
+                <span className="flex items-center gap-1 text-xs text-green-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <TimerDisplay startTime={activeEntry.startTime} className="text-xs text-green-600" />
+                </span>
+              ) : (
+                <span />
+              )}
+              <TimerControl taskId={task._id} variant="compact" />
             </div>
           </div>
         </div>

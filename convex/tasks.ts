@@ -242,6 +242,23 @@ export const remove = mutation({
     if (!userId) throw new Error("Not authenticated");
     const task = await ctx.db.get(args.taskId);
     if (!task || task.userId !== userId) throw new Error("Not found");
+
+    // Stop running timer and delete all time entries for this task
+    const entries = await ctx.db
+      .query("timeEntries")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .take(500);
+    const now = Date.now();
+    for (const entry of entries) {
+      if (entry.endTime === undefined) {
+        await ctx.db.patch(entry._id, {
+          endTime: now,
+          duration: now - entry.startTime,
+        });
+      }
+      await ctx.db.delete(entry._id);
+    }
+
     await ctx.db.delete(args.taskId);
   },
 });

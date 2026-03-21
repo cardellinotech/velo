@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useToast } from "@/hooks/useToast";
 import { TASK_TYPES, PRIORITIES } from "@/lib/constants";
 import type { TaskStatus } from "@/lib/constants";
@@ -15,7 +15,6 @@ interface TaskFormProps {
   open: boolean;
   onClose: () => void;
   projectId: Id<"projects">;
-  task?: Doc<"tasks">;
   initialStatus?: TaskStatus;
 }
 
@@ -23,12 +22,10 @@ export function TaskForm({
   open,
   onClose,
   projectId,
-  task,
   initialStatus = "todo",
 }: TaskFormProps) {
   const toast = useToast();
   const createTask = useMutation(api.tasks.create);
-  const updateTask = useMutation(api.tasks.update);
   const epics = useQuery(api.epics.listByProject, { projectId });
 
   const [title, setTitle] = useState("");
@@ -38,58 +35,39 @@ export function TaskForm({
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [titleError, setTitleError] = useState("");
+  const titleRef = useRef<HTMLInputElement>(null);
 
-  const isEdit = !!task;
-
-  // Populate form when editing
   useEffect(() => {
-    if (task) {
-      setTitle(task.title);
-      setTaskType(task.taskType);
-      setEpicId(task.epicId ?? "");
-      setPriority(task.priority);
-      setDescription(task.description ?? "");
-    } else {
+    if (open) {
       setTitle("");
       setTaskType("task");
       setEpicId("");
       setPriority("medium");
       setDescription("");
+      setTitleError("");
     }
-    setTitleError("");
-  }, [task, open]);
+  }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
       setTitleError("Title is required.");
+      titleRef.current?.focus();
       return;
     }
 
     setLoading(true);
     try {
-      if (isEdit) {
-        await updateTask({
-          taskId: task._id,
-          title: title.trim(),
-          taskType: taskType as Doc<"tasks">["taskType"],
-          epicId: epicId ? (epicId as Id<"epics">) : undefined,
-          priority: priority as Doc<"tasks">["priority"],
-          description: description.trim() || undefined,
-        });
-        toast.success("Task updated.");
-      } else {
-        await createTask({
-          projectId,
-          title: title.trim(),
-          taskType: taskType as Doc<"tasks">["taskType"],
-          epicId: epicId ? (epicId as Id<"epics">) : undefined,
-          priority: priority as Doc<"tasks">["priority"],
-          description: description.trim() || undefined,
-          status: initialStatus,
-        });
-        toast.success("Task created.");
-      }
+      await createTask({
+        projectId,
+        title: title.trim(),
+        taskType: taskType as Doc<"tasks">["taskType"],
+        epicId: epicId ? (epicId as Id<"epics">) : undefined,
+        priority: priority as Doc<"tasks">["priority"],
+        description: description.trim() || undefined,
+        status: initialStatus,
+      });
+      toast.success("Task created.");
       onClose();
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -104,103 +82,106 @@ export function TaskForm({
     <Dialog
       open={open}
       onClose={onClose}
-      title={isEdit ? "Edit task" : "New task"}
+      title="New task"
+      noPadding
+      className="max-w-2xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col">
         {/* Title */}
-        <Input
-          label="Title"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            if (e.target.value.trim()) setTitleError("");
-          }}
-          placeholder="What needs to be done?"
-          error={titleError}
-          required
-          autoFocus
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Task type */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-primary">
-              Type
-            </label>
-            <select
-              value={taskType}
-              onChange={(e) => setTaskType(e.target.value)}
-              className="block w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {Object.entries(TASK_TYPES).map(([key, { label }]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Priority */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text-primary">
-              Priority
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="block w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {Object.entries(PRIORITIES).map(([key, { label }]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="px-6 pt-5 pb-4">
+          <input
+            ref={titleRef}
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (e.target.value.trim()) setTitleError("");
+            }}
+            placeholder="What needs to be done?"
+            autoFocus
+            className="text-2xl font-semibold text-text-primary bg-transparent border-0 border-b-2 border-transparent hover:border-border focus:border-primary focus:outline-none transition-colors w-full py-1 placeholder:text-text-secondary/40 placeholder:font-normal"
+          />
+          {titleError && (
+            <p className="text-xs text-red-600 mt-1.5">{titleError}</p>
+          )}
         </div>
 
-        {/* Epic */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-text-primary">
-            Epic <span className="text-text-secondary font-normal">(optional)</span>
-          </label>
-          <select
-            value={epicId}
-            onChange={(e) => setEpicId(e.target.value)}
-            className="block w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">No epic</option>
-            {openEpics.map((epic) => (
-              <option key={epic._id} value={epic._id}>
-                {epic.name}
-              </option>
-            ))}
-          </select>
+        {/* Details section */}
+        <div className="px-6 pb-4 border-b border-border">
+          <p className="text-xs font-semibold text-text-primary uppercase tracking-wide mb-1">
+            Details
+          </p>
+          <div className="flex flex-col gap-0.5">
+            <DetailRow label="Type">
+              <select
+                value={taskType}
+                onChange={(e) => setTaskType(e.target.value)}
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+              >
+                {Object.entries(TASK_TYPES).map(([key, { label }]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </DetailRow>
+
+            <DetailRow label="Priority">
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+                style={{ color: PRIORITIES[priority as keyof typeof PRIORITIES]?.color }}
+              >
+                {Object.entries(PRIORITIES).map(([key, { label }]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </DetailRow>
+
+            <DetailRow label="Epic">
+              <select
+                value={epicId}
+                onChange={(e) => setEpicId(e.target.value)}
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+              >
+                <option value="">No epic</option>
+                {openEpics.map((epic) => (
+                  <option key={epic._id} value={epic._id}>{epic.name}</option>
+                ))}
+              </select>
+            </DetailRow>
+          </div>
         </div>
 
         {/* Description */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-text-primary">
-            Description <span className="text-text-secondary font-normal">(optional)</span>
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add more details..."
-            rows={3}
-            className="block w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+        <div className="px-6 pt-4 pb-4">
+          <p className="text-xs font-medium text-text-secondary uppercase tracking-wide mb-2">
+            Description <span className="normal-case font-normal">(optional)</span>
+          </p>
+          <RichTextEditor
+            content={description}
+            onChange={setDescription}
+            placeholder="Add more details…"
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
+        {/* Footer */}
+        <div className="border-t border-border px-6 py-3 flex justify-end gap-2 shrink-0">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" loading={loading}>
-            {isEdit ? "Save changes" : "Create task"}
+            Create task
           </Button>
         </div>
       </form>
     </Dialog>
+  );
+}
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
+      <span className="text-xs text-text-secondary w-20 shrink-0">{label}</span>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
   );
 }

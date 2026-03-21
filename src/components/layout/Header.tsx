@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { ActiveTimerBar } from "@/components/timer/ActiveTimerBar";
 
 export function Header() {
   const user = useQuery(api.users.current);
@@ -11,9 +12,9 @@ export function Header() {
       {/* Left: placeholder for page title (set by individual pages) */}
       <div />
 
-      {/* Right: user info */}
+      {/* Right: active timer + user info */}
       <div className="flex items-center gap-3">
-        {/* Active timer indicator placeholder — built in Phase 3 */}
+        <ActiveTimerBar />
         <div className="text-sm text-text-secondary">
           {user?.name ?? user?.email ?? ""}
         </div>

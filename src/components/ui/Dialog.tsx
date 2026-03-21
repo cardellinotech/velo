@@ -10,9 +10,10 @@ interface DialogProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  noPadding?: boolean;
 }
 
-export function Dialog({ open, onClose, title, children, className }: DialogProps) {
+export function Dialog({ open, onClose, title, children, className, noPadding }: DialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
       className="fixed inset-0 z-50 flex items-center justify-center"
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Dialog panel */}
       <div
@@ -59,7 +60,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
             </button>
           </div>
         )}
-        <div className="flex-1 overflow-hidden">{children}</div>
+        <div className={cn("flex-1 overflow-y-auto", !noPadding && "p-4")}>{children}</div>
       </div>
     </div>
   );
