@@ -1,16 +1,37 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { Settings, Layers } from "lucide-react";
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { KanbanFilters } from "@/components/kanban/KanbanFilters";
+import type { KanbanFilterState } from "@/components/kanban/KanbanFilters";
+import { TaskForm } from "@/components/tasks/TaskForm";
+import type { TaskStatus } from "@/lib/constants";
+
+const DEFAULT_FILTERS: KanbanFilterState = {
+  taskTypes: [],
+  epicId: null,
+  priorities: [],
+};
 
 export default function ProjectBoardPage() {
   const params = useParams();
   const projectId = params.projectId as Id<"projects">;
   const project = useQuery(api.projects.get, { projectId });
+
+  const [filters, setFilters] = useState<KanbanFilterState>(DEFAULT_FILTERS);
+  const [taskFormOpen, setTaskFormOpen] = useState(false);
+  const [taskFormStatus, setTaskFormStatus] = useState<TaskStatus>("todo");
+
+  function handleAddTask(status: TaskStatus) {
+    setTaskFormStatus(status);
+    setTaskFormOpen(true);
+  }
 
   if (project === undefined) {
     return (
@@ -30,35 +51,55 @@ export default function ProjectBoardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-text-primary">{project.name}</h1>
-          {project.clientName && (
-            <p className="text-sm text-text-secondary mt-0.5">{project.clientName}</p>
-          )}
+    <>
+      <div className="flex flex-col gap-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-text-primary">{project.name}</h1>
+            {project.clientName && (
+              <p className="text-sm text-text-secondary mt-0.5">{project.clientName}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/projects/${projectId}/epics`}
+              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
+            >
+              <Layers className="w-4 h-4" />
+              Epics
+            </Link>
+            <Link
+              href={`/projects/${projectId}/settings`}
+              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/projects/${projectId}/epics`}
-            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
-          >
-            <Layers className="w-4 h-4" />
-            Epics
-          </Link>
-          <Link
-            href={`/projects/${projectId}/settings`}
-            className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </Link>
-        </div>
+
+        {/* Filters */}
+        <KanbanFilters
+          projectId={projectId}
+          filters={filters}
+          onChange={setFilters}
+        />
+
+        {/* Board */}
+        <KanbanBoard
+          projectId={projectId}
+          filters={filters}
+          onAddTask={handleAddTask}
+        />
       </div>
 
-      <p className="text-sm text-text-secondary">
-        Kanban board coming in Phase 2.
-      </p>
-    </div>
+      <TaskForm
+        open={taskFormOpen}
+        onClose={() => setTaskFormOpen(false)}
+        projectId={projectId}
+        initialStatus={taskFormStatus}
+      />
+    </>
   );
 }

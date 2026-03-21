@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as epics from "../epics.js";
 import type * as http from "../http.js";
 import type * as projects from "../projects.js";
+import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 
 import type {
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   epics: typeof epics;
   http: typeof http;
   projects: typeof projects;
+  tasks: typeof tasks;
   users: typeof users;
 }>;
 

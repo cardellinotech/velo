@@ -110,35 +110,35 @@
 
 **Agent prompt:** "Implement task CRUD with Convex mutations and build the Kanban board view for projects. The board should have four columns (To Do, In Progress, In Review, Done) with drag & drop using @hello-pangea/dnd. Task cards should show title, type badge (colored), epic tag, and priority indicator. Include a task detail view and task creation form. Handle edge cases for drag & drop."
 
-- [ ] **TASK-019** — Implement task queries and mutations
+- [x] **TASK-019** — Implement task queries and mutations
   Files: `convex/tasks.ts`
   Notes: Queries: `listByProject`, `listByEpic`, `get`. Mutations: `create` (default status "todo", auto-assign order), `update`, `moveToColumn` (update status + order), `reorder`, `delete`. Auth-gated.
 
-- [ ] **TASK-020** — Build TaskCard component
+- [x] **TASK-020** — Build TaskCard component
   Files: `src/components/kanban/TaskCard.tsx`, `src/components/tasks/TaskTypeBadge.tsx`
   Notes: Compact card showing: title (truncate at 2 lines), type badge (colored: Bug=red, Story=blue, Task=gray, Incident=orange), epic tag if assigned, priority dot (color-coded). Drag handle. Hover state with shadow elevation.
 
-- [ ] **TASK-021** — Build KanbanColumn component
+- [x] **TASK-021** — Build KanbanColumn component
   Files: `src/components/kanban/KanbanColumn.tsx`
   Notes: Column with header (title + task count), droppable area, task cards. "Add Task" button at bottom. Empty state: muted "No tasks" text. Column header colors match status.
 
-- [ ] **TASK-022** — Build KanbanBoard component with drag & drop
+- [x] **TASK-022** — Build KanbanBoard component with drag & drop
   Files: `src/components/kanban/KanbanBoard.tsx`
   Notes: Install @hello-pangea/dnd. Four columns side by side. Handle `onDragEnd`: move between columns (update status + order), reorder within column. Optimistic updates — move the card immediately, sync with Convex in background. Handle drag-to-same-position as no-op.
 
-- [ ] **TASK-023** — Build Kanban board page
+- [x] **TASK-023** — Build Kanban board page
   Files: `src/app/(dashboard)/projects/[projectId]/page.tsx`
   Notes: Project Kanban board as the main project view. Project name as page title. Filter bar: filter by task type, epic, priority. Integrate KanbanBoard component with Convex data.
 
-- [ ] **TASK-024** — Build task creation form
+- [x] **TASK-024** — Build task creation form
   Files: `src/components/tasks/TaskForm.tsx`
   Notes: Dialog form: title (required), task type (dropdown: Story, Task, Bug, Incident), epic (optional dropdown), priority (dropdown: low, medium, high, urgent), description (optional textarea). Default type: "task", default priority: "medium".
 
-- [ ] **TASK-025** — Build task detail view
+- [x] **TASK-025** — Build task detail view
   Files: `src/app/(dashboard)/tasks/[taskId]/page.tsx`, `src/components/tasks/TaskDetail.tsx`
   Notes: Full task view. Editable title (inline), type/status/priority badges, epic selector, description textarea. Placeholder for time entries section (built in Phase 3). Total tracked time display.
 
-- [ ] **TASK-026** — Add task filtering on Kanban board
+- [x] **TASK-026** — Add task filtering on Kanban board
   Files: `src/components/kanban/KanbanFilters.tsx`
   Notes: Filter bar above the board. Filter by: task type (multi-select chips), epic (dropdown), priority (multi-select chips). Filters applied client-side on the task list. Clear all filters button.
 

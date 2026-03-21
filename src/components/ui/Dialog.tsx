@@ -30,12 +30,9 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
-      }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Dialog panel */}
       <div
@@ -44,12 +41,12 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
         aria-labelledby={title ? "dialog-title" : undefined}
         className={cn(
           "relative z-10 w-full max-w-md rounded-lg bg-white shadow-drag mx-4",
-          "border border-border",
+          "border border-border flex flex-col max-h-[90vh]",
           className
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
             <h2 id="dialog-title" className="text-sm font-semibold text-text-primary">
               {title}
             </h2>
@@ -62,7 +59,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
             </button>
           </div>
         )}
-        <div className="p-4">{children}</div>
+        <div className="flex-1 overflow-hidden">{children}</div>
       </div>
     </div>
   );
