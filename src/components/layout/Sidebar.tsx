@@ -2,11 +2,14 @@
 
 import { cn } from "@/lib/utils";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import {
   LayoutDashboard,
   FolderKanban,
   Receipt,
   LogOut,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,6 +23,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
+  const projects = useQuery(api.projects.listActive);
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -56,6 +60,37 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
+
+        {/* Active projects */}
+        {projects && projects.length > 0 && (
+          <div className="mt-4">
+            <p className="px-3 mb-1 text-xs font-medium text-text-secondary uppercase tracking-wide">
+              Projects
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {projects.map((project) => {
+                const href = `/projects/${project._id}`;
+                const active = pathname.startsWith(href);
+                return (
+                  <li key={project._id}>
+                    <Link
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors duration-100",
+                        active
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-text-secondary hover:bg-border/50 hover:text-text-primary"
+                      )}
+                    >
+                      <ChevronRight className="w-3 h-3 shrink-0 opacity-50" aria-hidden="true" />
+                      <span className="truncate">{project.name}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Logout */}

@@ -18,43 +18,43 @@
 
 **Agent prompt:** "Set up a new Next.js project with Convex as the backend. Install all dependencies, configure Tailwind CSS with the Velo design tokens, set up Convex Auth with email/password authentication, and create the app shell with sidebar navigation and a responsive layout. The sidebar should show navigation links for Dashboard, Projects, and Billing. Use Inter and JetBrains Mono fonts. Create a login page and protect all routes behind authentication."
 
-- [ ] **TASK-001** — Initialize Next.js project with TypeScript
+- [x] **TASK-001** — Initialize Next.js project with TypeScript
   Files: `package.json`, `tsconfig.json`, `next.config.ts`
   Notes: Use `npx create-next-app@latest` with TypeScript, Tailwind CSS, App Router, and src/ directory.
 
-- [ ] **TASK-002** — Install and configure Convex
+- [x] **TASK-002** — Install and configure Convex
   Files: `convex/`, `convex.json`, `.env.local`
   Notes: Run `npx convex dev` to initialize. Set up environment variables for Convex deployment URL.
 
-- [ ] **TASK-003** — Configure Tailwind with Velo design tokens
+- [x] **TASK-003** — Configure Tailwind with Velo design tokens
   Files: `tailwind.config.ts`, `src/app/globals.css`
   Notes: Extend Tailwind theme with colors (primary #4F46E5, surface #F9FAFB, etc.), fonts (Inter, JetBrains Mono), spacing, shadows, and border radius from PRD §9 and Vision §5.
 
-- [ ] **TASK-004** — Set up fonts (Inter + JetBrains Mono)
+- [x] **TASK-004** — Set up fonts (Inter + JetBrains Mono)
   Files: `src/app/layout.tsx`
   Notes: Use `next/font/google` to load Inter (400, 500, 600) and JetBrains Mono (500). Apply Inter as default, JetBrains Mono available via `font-mono` class.
 
-- [ ] **TASK-005** — Implement Convex Auth with email/password
+- [x] **TASK-005** — Implement Convex Auth with email/password
   Files: `convex/auth.ts`, `convex/schema.ts`
   Notes: Install `@convex-dev/auth`. Configure Password provider. Set up auth tables in schema. Follow Convex Auth documentation for setup.
 
-- [ ] **TASK-006** — Create login page
+- [x] **TASK-006** — Create login page
   Files: `src/app/login/page.tsx`
   Notes: Centered card layout. Email input, password input, sign in button, sign up toggle. Handle loading and error states. Redirect to `/` on success.
 
-- [ ] **TASK-007** — Create auth middleware and protected layout
+- [x] **TASK-007** — Create auth middleware and protected layout
   Files: `src/app/layout.tsx`, `src/components/layout/ConvexClientProvider.tsx`
   Notes: Set up ConvexProviderWithAuth. Redirect unauthenticated users to `/login`. Show loading state while checking auth.
 
-- [ ] **TASK-008** — Create app shell with sidebar navigation
+- [x] **TASK-008** — Create app shell with sidebar navigation
   Files: `src/components/layout/Sidebar.tsx`, `src/components/layout/Header.tsx`, `src/app/(dashboard)/layout.tsx`
   Notes: Sidebar (240px fixed) with navigation: Dashboard, Projects, Billing. Use Lucide icons. Active state styling. Header with user info and logout button. Use route groups for authenticated layout.
 
-- [ ] **TASK-009** — Create base UI components
+- [x] **TASK-009** — Create base UI components
   Files: `src/components/ui/Button.tsx`, `src/components/ui/Input.tsx`, `src/components/ui/Badge.tsx`, `src/components/ui/Card.tsx`, `src/components/ui/Dialog.tsx`, `src/components/ui/Toast.tsx`
   Notes: Build minimal, reusable components with Tailwind. Button variants: primary, secondary, ghost, destructive. Input with label and error state. Badge with color variants for task types. Card component for project cards. Dialog for confirmations. Toast for notifications.
 
-- [ ] **TASK-010** — Create utility functions and constants
+- [x] **TASK-010** — Create utility functions and constants
   Files: `src/lib/utils.ts`, `src/lib/constants.ts`, `src/lib/formatTime.ts`
   Notes: `cn()` helper for clsx + tailwind-merge. Constants for task types, statuses, priorities with labels and colors. `formatDuration()` for time display (HH:MM:SS), `formatDate()` helpers.
 
@@ -68,35 +68,35 @@
 
 **Agent prompt:** "Implement the Convex database schema for projects, epics, tasks, and time entries. Then build the project management features: projects list page with cards, create/edit/archive projects, project settings page. Also build epic CRUD within projects. All queries and mutations must verify the authenticated user."
 
-- [ ] **TASK-011** — Define full Convex schema
+- [x] **TASK-011** — Define full Convex schema
   Files: `convex/schema.ts`
   Notes: Define all tables (projects, epics, tasks, timeEntries) with fields and indexes as specified in PRD §3. Include all indexes for efficient querying.
 
-- [ ] **TASK-012** — Implement project queries and mutations
+- [x] **TASK-012** — Implement project queries and mutations
   Files: `convex/projects.ts`
   Notes: Queries: `list` (all user projects), `get` (single project). Mutations: `create`, `update`, `archive`. All gated by auth — validate userId on every operation.
 
-- [ ] **TASK-013** — Implement epic queries and mutations
+- [x] **TASK-013** — Implement epic queries and mutations
   Files: `convex/epics.ts`
   Notes: Queries: `listByProject`, `get`. Mutations: `create`, `update`, `close`. Validate that epic's project belongs to the authenticated user.
 
-- [ ] **TASK-014** — Build projects list page
+- [x] **TASK-014** — Build projects list page
   Files: `src/app/(dashboard)/projects/page.tsx`
   Notes: Grid of project cards. Each card shows: project name, client name, task count (can be 0 initially), status. "New Project" button opens create dialog. Empty state when no projects exist.
 
-- [ ] **TASK-015** — Build project create/edit dialog
+- [x] **TASK-015** — Build project create/edit dialog
   Files: `src/components/projects/ProjectForm.tsx`
   Notes: Dialog with form: project name (required), client name (optional), description (optional). Used for both create and edit. Form validation — name is required.
 
-- [ ] **TASK-016** — Build project settings page
+- [x] **TASK-016** — Build project settings page
   Files: `src/app/(dashboard)/projects/[projectId]/settings/page.tsx`
   Notes: Form to edit project name, client name, description. Archive button with confirmation dialog: "Archiving will hide this project. You can unarchive it later."
 
-- [ ] **TASK-017** — Build epic management within projects
+- [x] **TASK-017** — Build epic management within projects
   Files: `src/app/(dashboard)/projects/[projectId]/epics/page.tsx`, `src/components/epics/EpicForm.tsx`, `src/components/epics/EpicList.tsx`
   Notes: List of epics for a project. Create/edit epics with name, description, optional color. Close/reopen epics. Show epic status (open/closed) and linked task count.
 
-- [ ] **TASK-018** — Add project navigation and sidebar integration
+- [x] **TASK-018** — Add project navigation and sidebar integration
   Files: `src/components/layout/Sidebar.tsx`, `src/components/layout/ProjectSwitcher.tsx`
   Notes: Update sidebar to list active projects below the main navigation. Clicking a project goes to its Kanban board. Add a ProjectSwitcher dropdown in the header for quick switching.
 
