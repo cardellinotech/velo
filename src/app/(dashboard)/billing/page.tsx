@@ -1,8 +1,15 @@
+import { BillingSummary } from "@/components/billing/BillingSummary";
+
 export default function BillingPage() {
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-text-primary mb-1">Billing</h1>
-      <p className="text-sm text-text-secondary">Billing summary coming in Phase 4.</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-xl font-semibold text-text-primary">Billing</h1>
+        <p className="text-sm text-text-secondary mt-0.5">
+          Track and export time by project and client.
+        </p>
+      </div>
+      <BillingSummary />
     </div>
   );
 }

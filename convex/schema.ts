@@ -59,7 +59,8 @@ export default defineSchema({
   })
     .index("by_projectId", ["projectId"])
     .index("by_projectId_status", ["projectId", "status"])
-    .index("by_epicId", ["epicId"]),
+    .index("by_epicId", ["epicId"])
+    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
 
   timeEntries: defineTable({
     taskId: v.id("tasks"),

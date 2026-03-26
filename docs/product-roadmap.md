@@ -194,27 +194,27 @@
 
 **Agent prompt:** "Build the billing summary view and dashboard for Velo. The billing view should show aggregated tracked hours grouped by project, epic, and task type, with a date range filter and CSV export. The dashboard should show an overview: active projects, running timer, recent tasks, and today's tracked hours. Build the Convex queries for billing aggregation."
 
-- [ ] **TASK-035** — Implement billing aggregation queries
+- [x] **TASK-035** — Implement billing aggregation queries
   Files: `convex/billing.ts`
   Notes: Queries: `summary` (total hours for date range, optional project filter), `summaryByProject` (hours grouped by project), `summaryByEpic` (hours grouped by epic within project), `summaryByTaskType` (hours grouped by task type). All queries filter by userId and date range. Convert millisecond durations to hours. Exclude running timers from totals (or show separately).
 
-- [ ] **TASK-036** — Build BillingSummary page
+- [x] **TASK-036** — Build BillingSummary page
   Files: `src/app/(dashboard)/billing/page.tsx`, `src/components/billing/BillingSummary.tsx`
   Notes: Date range picker with presets: "This month", "Last month", "This quarter", "Custom". Project filter dropdown. Summary cards at top: total hours, number of projects, number of tasks. Below: breakdown table.
 
-- [ ] **TASK-037** — Build BillingTable component
+- [x] **TASK-037** — Build BillingTable component
   Files: `src/components/billing/BillingTable.tsx`
   Notes: Expandable table. Top level: projects with total hours and client name. Expand to see: epics within project with hours. Expand further: task type breakdown. Clean, scannable layout. Alternating row backgrounds.
 
-- [ ] **TASK-038** — Build CSV export
+- [x] **TASK-038** — Build CSV export
   Files: `src/components/billing/BillingExport.tsx`
   Notes: "Export CSV" button. Uses papaparse to generate CSV from current billing data. Columns: Project, Client, Epic, Task, Task Type, Date, Hours, Description. Filename: `velo-billing-{startDate}-{endDate}.csv`. Triggers browser download.
 
-- [ ] **TASK-039** — Build Dashboard page
+- [x] **TASK-039** — Build Dashboard page
   Files: `src/app/(dashboard)/page.tsx`
   Notes: Welcome message: "Hey Dominic" (user name). Active timer widget if running. Stats row: active projects count, tasks in progress, today's tracked hours. Recent tasks list (last 10 updated, showing task name, project, type, time ago). Empty state for new users.
 
-- [ ] **TASK-040** — Add dashboard stats queries
+- [x] **TASK-040** — Add dashboard stats queries
   Files: `convex/dashboard.ts`
   Notes: Queries: `stats` (returns active project count, in-progress task count, today's total hours), `recentTasks` (last 10 updated tasks with project info). Single efficient query where possible.
 
