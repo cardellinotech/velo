@@ -228,37 +228,189 @@
 
 **Agent prompt:** "Polish Velo for daily use. Add keyboard shortcuts for common actions. Implement proper loading states, empty states, and error handling across all pages. Ensure accessibility (WCAG AA): keyboard navigation, focus indicators, screen reader support for Kanban. Add toast notifications for all actions. Optimize performance. Fix any visual inconsistencies and ensure the design system is consistently applied."
 
-- [ ] **TASK-041** — Add loading states and skeletons
+- [x] **TASK-041** — Add loading states and skeletons
   Files: All page components
   Notes: Add skeleton loading states for: Kanban board (skeleton columns with card placeholders), project list (skeleton cards), billing table (skeleton rows), dashboard (skeleton stat cards). Use Tailwind `animate-pulse` on gray blocks.
 
-- [ ] **TASK-042** — Add empty states
+- [x] **TASK-042** — Add empty states
   Files: All page and list components
   Notes: Empty states for: no projects ("Create your first project to get started"), empty Kanban board, empty column, no epics, no time entries, no billing data for period. Each with an icon, message, and CTA where appropriate.
 
-- [ ] **TASK-043** — Add error handling and toast notifications
+- [x] **TASK-043** — Add error handling and toast notifications
   Files: `src/components/ui/Toast.tsx`, all mutation call sites
   Notes: Toast system: success (green), error (red), info (blue). Show toasts for: task created, timer started/stopped, project created, errors. Auto-dismiss after 3 seconds. Stack multiple toasts.
 
-- [ ] **TASK-044** — Add keyboard shortcuts
+- [x] **TASK-044** — Add keyboard shortcuts
   Files: `src/hooks/useKeyboardShortcuts.ts`
   Notes: Global shortcuts: `N` = new task (when on Kanban), `P` = new project, `T` = toggle timer on current task, `/` = focus search/filter, `Esc` = close dialogs. Show shortcut hints in tooltips. Keyboard shortcut help dialog (`?`).
 
-- [ ] **TASK-045** — Accessibility audit and fixes
+- [x] **TASK-045** — Accessibility audit and fixes
   Files: All components
   Notes: Ensure: all buttons have aria-labels, focus indicators (2px indigo outline) visible on all interactive elements, Kanban drag & drop has keyboard alternative and aria-live announcements, color contrast meets WCAG AA (4.5:1), form inputs have associated labels, timer state announced to screen readers.
 
-- [ ] **TASK-046** — Performance optimization
+- [x] **TASK-046** — Performance optimization
   Files: Various
   Notes: Audit: ensure Convex queries use indexes efficiently, add `React.memo` where needed (TaskCard, KanbanColumn), lazy load non-critical components (billing, settings). Verify all primary views load under 200ms. Use React DevTools profiler.
 
-- [ ] **TASK-047** — Visual polish and consistency
+- [x] **TASK-047** — Visual polish and consistency
   Files: All components
   Notes: Review all screens against design system. Ensure consistent spacing, typography, colors. Check hover states, transitions (100ms for color, 200ms for movement). Ensure all shadows, border radiuses match design tokens. Test in Chrome, Firefox, Safari.
 
-- [ ] **TASK-048** — Final integration test with real data
+- [x] **TASK-048** — Final integration test with real data
   Files: N/A
   Notes: Create real projects: client projects (with client names) and personal projects (Aura). Create epics and tasks. Use the timer for a full work session. Generate a billing summary. Export CSV. Verify everything works end-to-end. Document any issues found.
+
+---
+
+## Phase 6: Visual Redesign & Hourly Rate Feature
+
+**Goal:** Transform Velo from functional to premium. Complete visual redesign of all components — dark sidebar, gradient accents, layered shadows, microinteractions. Add hourly rate per project with automatic billing calculations. At the end of this phase, Velo feels like a polished, modern tool on par with Linear/Raycast — and billing shows calculated amounts.
+
+**Reference sections:** Vision §5 (Design Direction — UPDATED), PRD §3 (Data Model — hourlyRate field), PRD §4 (API — updated mutations/queries), PRD §8 (UI/UX Requirements)
+
+**Agent prompt:** "Perform a complete visual redesign of Velo. The current UI is functional but bland. Transform it into a premium, polished experience. Key changes: (1) Dark sidebar with gradient background (slate-900 → slate-800), active nav items with indigo glow, light text. (2) Update Tailwind config and globals.css with new design tokens — warm slate palette, layered shadows, larger border radius, gradient accents. (3) Redesign TaskCards with hover lift, better type badges, refined spacing. (4) Redesign Dashboard with elevated stat cards with colored accent borders. (5) Redesign Login page with gradient accent. (6) Add gradient primary buttons. (7) Add smooth microinteractions (hover lifts, scale-in modals, toast slide-in). (8) Add hourlyRate field to projects schema, update project form, update billing queries to calculate amounts, show amounts in billing view. Read the UPDATED Vision §5 Design Direction for the full spec."
+
+- [x] **TASK-049** — Update Tailwind config and globals.css with new design tokens
+  Files: `tailwind.config.ts`, `src/app/globals.css`
+  Notes: Replace the entire color palette with warm slate-based colors. Add sidebar color tokens. Add gradient backgrounds (`gradient-primary`, `gradient-sidebar`). Update shadows to layered system (xs, card, card-hover, elevated, drag, modal). Increase border radius (sm=6px, md=10px, lg=14px). Add keyframe animations (slide-in, scale-in, pulse-soft). Add transition utilities. Update CSS variables to match new Vision §5 tokens. Keep existing Tailwind class names working — this is a token swap, not a class rename.
+
+- [x] **TASK-050** — Redesign Sidebar with dark theme
+  Files: `src/components/layout/Sidebar.tsx`
+  Notes: Dark sidebar: `bg-gradient-sidebar` (slate-900 → slate-800). Velo logo/text in white with optional indigo accent. Nav items: light text (slate-300), hover reveals soft white bg (rgba(255,255,255,0.05)), active item has indigo background glow (rgba(99,102,241,0.2)) with white text. Project list section: subtle divider, project names in slate-300, hover in slate-200. Logout button at bottom in muted style. Add subtle border-right with `border-slate-700/50`. Width: 260px (slightly wider for breathing room).
+
+- [x] **TASK-051** — Redesign Header
+  Files: `src/components/layout/Header.tsx`
+  Notes: Clean white header with subtle bottom border (slate-200). Remove any heavy styling. The header should feel lightweight — just breadcrumb/page title on left, active timer + user on right. Consider a very subtle `backdrop-blur` and slight transparency if the content scrolls behind it.
+
+- [x] **TASK-052** — Redesign Button component with gradient primary
+  Files: `src/components/ui/Button.tsx`
+  Notes: Primary variant: `bg-gradient-primary` (indigo → violet gradient), white text, hover shifts gradient slightly darker. Add subtle shadow on primary buttons (`shadow-xs`). Secondary: clean white with slate-200 border, hover border-slate-300. Ghost: transparent, hover bg-slate-50. All variants: update border-radius to new `rounded-md` (10px). Smooth 150ms transitions.
+
+- [x] **TASK-053** — Redesign Card, Input, Badge, Dialog components
+  Files: `src/components/ui/Card.tsx`, `src/components/ui/Input.tsx`, `src/components/ui/Badge.tsx`, `src/components/ui/Dialog.tsx`
+  Notes: Card: updated shadow-card, rounded-lg (14px), hover state with shadow-card-hover + translateY(-1px). Input: border-slate-200, focus ring indigo with bg-white, rounded-md. Badge: softer fills with better text contrast (see Vision §5 badge colors). Dialog: modal shadow, scale-in animation on open, backdrop with blur.
+
+- [x] **TASK-054** — Redesign Toast component
+  Files: `src/components/ui/Toast.tsx`
+  Notes: Slide-in animation from right. Rounded-lg with elevated shadow. Success: emerald-50 bg with emerald-600 text and left accent border. Error: red-50 bg with red-600 text. Info: slate-50 bg. Close button on hover. Auto-dismiss with progress bar (optional subtle animation at bottom of toast).
+
+- [x] **TASK-055** — Redesign TaskCard with hover lift and refined layout
+  Files: `src/components/kanban/TaskCard.tsx`, `src/components/tasks/TaskTypeBadge.tsx`
+  Notes: Card: white bg, shadow-card, rounded-lg. Hover: shadow-card-hover + `transform: translateY(-1px)` over 150ms. Drag: shadow-drag + slight scale(1.02). Type badge: softer fills with rounded-md, better spacing. Priority indicator: colored left border strip instead of dot (4px wide, full height, rounded). Epic tag: subtle pill with color dot. Timer indicator: compact, green accent with pulse-soft animation. Overall more spacious padding (p-3.5 instead of p-3).
+
+- [x] **TASK-056** — Redesign KanbanColumn with better visual hierarchy
+  Files: `src/components/kanban/KanbanColumn.tsx`
+  Notes: Column header: bigger task count badge, status-colored indicator dot (not just text color). Column background: very subtle surface color (slate-50/50) with rounded-xl container. Drop target state: soft indigo-50 background with dashed indigo border. Add subtle column header underline that matches status color. Minimum height for empty columns.
+
+- [x] **TASK-057** — Redesign Dashboard with elevated stat cards
+  Files: `src/app/(dashboard)/page.tsx`
+  Notes: Welcome section: larger heading, today's date in text-secondary. Stat cards: white bg, elevated shadow, colored LEFT accent border (3px, rounded). Projects count = indigo accent, Tasks in progress = blue, Today's hours = emerald. Numbers in text-2xl font-semibold for scannability. Active timer widget: more prominent, full-width, emerald gradient border. Recent tasks: clean list with task type colored dot, hover state, timestamp.
+
+- [x] **TASK-058** — Redesign Projects page
+  Files: `src/app/(dashboard)/projects/page.tsx`
+  Notes: Project cards: elevated shadow, rounded-xl, hover lift. Client name as subtle badge. Task count and total hours as small stats at bottom. Active status: green dot indicator. Archived: muted opacity. "New Project" button: gradient primary. Empty state: larger icon, warmer messaging.
+
+- [x] **TASK-059** — Redesign Login page
+  Files: `src/app/login/page.tsx`
+  Notes: Centered card on a subtle gradient background (slate-50 → white gradient or a very soft radial gradient). Card: elevated shadow, rounded-xl. "Velo" heading with gradient text (indigo → violet) or bold with an icon accent. Clean, spacious form. Primary button full-width with gradient. Sign up/sign in toggle as subtle link below.
+
+- [x] **TASK-060** — Redesign Billing page and table
+  Files: `src/app/(dashboard)/billing/page.tsx`, `src/components/billing/BillingSummary.tsx`, `src/components/billing/BillingTable.tsx`, `src/components/billing/BillingExport.tsx`
+  Notes: Summary cards: same elevated style as dashboard stat cards. Total hours = indigo accent, Total amount = emerald accent (new — calculated from hourly rates). Table: cleaner row styling, subtle row dividers instead of alternating backgrounds. Expandable rows with smooth animation. Amount column showing "12h × €85 = €1,020" inline. Projects without hourlyRate show "–" in amount column. Export button: secondary style with download icon.
+
+- [x] **TASK-061** — Redesign ActiveTimerBar
+  Files: `src/components/timer/ActiveTimerBar.tsx`
+  Notes: More prominent: slightly taller, better contrast. White bg with emerald left border accent (instead of full green background). Task name as bold link. Timer display in JetBrains Mono with emerald color. Stop button as a small square icon button. Subtle pulse animation on the timer when running. Cleaner layout with better spacing.
+
+- [x] **TASK-062** — Add hourlyRate field to Convex schema and project mutations
+  Files: `convex/schema.ts`, `convex/projects.ts`
+  Notes: Add `hourlyRate: v.optional(v.number())` to projects table. Update `create` and `update` mutations to accept hourlyRate. No migration needed — field is optional, existing projects will have undefined (treated as no rate set).
+
+- [x] **TASK-063** — Update ProjectForm with hourly rate input
+  Files: `src/components/projects/ProjectForm.tsx`, `src/app/(dashboard)/projects/[projectId]/settings/page.tsx`
+  Notes: Add "Hourly Rate (€)" number input field to project form, below client name. Optional — placeholder "e.g. 85". Show in both create and edit modes. Also add to project settings page. Use type="number" with min="0" step="0.01".
+
+- [x] **TASK-064** — Update billing queries to calculate amounts
+  Files: `convex/billing.ts`
+  Notes: Update `summaryByProject` query to join with projects table and include hourlyRate. Calculate `amount = hours × hourlyRate` per project. Return both hours and amount (amount is null if no hourlyRate set). Update `summary` query to include total amount across all projects that have rates.
+
+- [x] **TASK-065** — Update Billing UI to show calculated amounts
+  Files: `src/components/billing/BillingSummary.tsx`, `src/components/billing/BillingTable.tsx`, `src/components/billing/BillingExport.tsx`
+  Notes: Add "Amount" column to billing table. Show calculated amount where hourlyRate exists, "–" where it doesn't. Summary card: add "Total Amount" card next to "Total Hours" (only visible if any projects have rates). Show rate inline: "12.5h × €85/h = €1,062.50". CSV export: add "Rate" and "Amount" columns. Format amounts with 2 decimal places and € symbol.
+
+- [x] **TASK-066** — Add microinteractions and transition polish
+  Files: Various components
+  Notes: Ensure all interactive elements have smooth transitions: buttons (150ms bg transition), cards (150ms shadow + transform), sidebar nav items (100ms bg), dialogs (scale-in animation + backdrop fade), toasts (slide-in), dropdown menus (scale-in from top). Add `will-change: transform` to frequently animated elements (task cards). Ensure no janky transitions — all should use `cubic-bezier(0.4, 0, 0.2, 1)` or similar smooth easing.
+
+- [x] **TASK-067** — Final visual QA and consistency pass
+  Files: All components
+  Notes: Review every screen: Login, Dashboard, Projects, Kanban, Task Detail, Epics, Billing, Settings. Verify: all shadows use new layered system, all borders use slate-200, all radius values match new tokens, all text colors use slate palette, sidebar is consistently dark, buttons use gradient where appropriate, all hover/focus states feel smooth. Test in Chrome and Firefox. Check that the dark sidebar doesn't clash with any page content.
+
+---
+
+## Phase 7: Multi-Currency & Invoice Generation
+
+**Goal:** Add multi-currency support (EUR, USD, CHF, GBP) with a global default and per-project override. Build a complete invoice generation system — create professional invoices from tracked hours, with sender/client details, line items, tax calculations, payment info, and PDF export. Add business settings for storing reusable sender data. At the end of this phase, Velo covers the full freelancer workflow: track → bill → invoice → get paid.
+
+**Reference sections:** PRD §3 (Data Model — userSettings, invoices tables), PRD §4 (API — userSettings, invoices), PRD §6 (FR-015 through FR-019), PRD §8 (Invoices List, Invoice Detail, Business Settings, updated Project Settings), PRD §12 (Invoice Edge Cases)
+
+**Agent prompt:** "Add multi-currency support and invoice generation to Velo. (1) Add a userSettings table with business details (name, address, VAT ID, tax rate, bank details, payment terms, invoice numbering, default currency). Build a Settings page at /settings. (2) Add currency field to projects schema (optional, falls back to global default). Update project form and settings to show currency dropdown. (3) Update all billing/currency displays to use the correct symbol (€/$/ £/CHF). (4) Add invoices table with full invoice data model. Build invoice CRUD mutations. (5) Build Invoices list page at /invoices with status filters. (6) Build Invoice detail/editor page — form with sender/client blocks, editable line items table, tax calculation, payment details, notes. (7) Add 'Create Invoice' flow from Billing page — pre-populate line items from tracked hours. (8) Build PDF export using @react-pdf/renderer with professional layout. (9) Add invoice status management (draft→sent→paid, overdue detection). Read PRD §12 Invoice Edge Cases carefully."
+
+- [ ] **TASK-068** — Add userSettings table to Convex schema
+  Files: `convex/schema.ts`, `convex/userSettings.ts`
+  Notes: Add `userSettings` table with all fields from PRD. Create `get` query (returns settings or sensible defaults if none exist). Create `upsert` mutation (create if not exists, update if exists). Index by userId (unique per user). Default currency: "EUR". Default invoicePrefix: "RE". Default nextInvoiceNumber: 1.
+
+- [ ] **TASK-069** — Build Business Settings page
+  Files: `src/app/(dashboard)/settings/page.tsx`, `src/components/settings/BusinessSettingsForm.tsx`
+  Notes: Form sections: General (default currency dropdown), Business Details (name, address textarea, VAT ID), Tax (rate % input), Payment (bank name, IBAN, BIC, payment term days), Invoice Numbering (prefix, next number preview showing formatted example). Save button. Success toast on save. Add "Settings" link to sidebar navigation.
+
+- [ ] **TASK-070** — Add currency field to projects and update forms
+  Files: `convex/schema.ts`, `convex/projects.ts`, `src/components/projects/ProjectForm.tsx`, `src/app/(dashboard)/projects/[projectId]/settings/page.tsx`
+  Notes: Add `currency: v.optional(v.string())` to projects table. Update create/update mutations. Add currency dropdown to project form and settings page — shows "Default (EUR)" option plus EUR, USD, CHF, GBP. If not set, falls back to user's defaultCurrency from settings. Show dynamic currency symbol next to hourly rate input.
+
+- [ ] **TASK-071** — Create currency utility helpers
+  Files: `src/lib/currency.ts`
+  Notes: Create helper functions: `getCurrencySymbol(code: string): string` (EUR→"€", USD→"$", GBP→"£", CHF→"CHF"), `formatAmount(amount: number, currency: string): string` (proper symbol placement + 2 decimal places), `SUPPORTED_CURRENCIES` constant array with code + label + symbol. Used across billing, invoices, and project views.
+
+- [ ] **TASK-072** — Update billing views with multi-currency support
+  Files: `src/components/billing/BillingSummary.tsx`, `src/components/billing/BillingTable.tsx`, `src/components/billing/BillingExport.tsx`, `convex/billing.ts`
+  Notes: Update billing queries to return project currency alongside amounts. Update UI to show correct currency symbol per project. Summary cards show amounts per currency if mixed (e.g. "€1,200 + $850"). CSV export includes currency column. BillingTable shows currency symbol per project row.
+
+- [ ] **TASK-073** — Add invoices table to Convex schema and implement mutations
+  Files: `convex/schema.ts`, `convex/invoices.ts`
+  Notes: Add `invoices` table with all fields from PRD. Implement mutations: `create` (auto-generate invoice number from settings prefix + year + padded sequence, auto-increment nextInvoiceNumber, snapshot sender details from userSettings), `update` (only drafts), `updateStatus` (draft→sent→paid, or draft→sent→overdue→paid), `delete` (only drafts). Implement queries: `list` (with optional status/project filter), `get` (single invoice). All auth-gated.
+
+- [ ] **TASK-074** — Build "Create Invoice" flow from Billing page
+  Files: `src/components/billing/BillingSummary.tsx`, `src/components/invoices/CreateInvoiceDialog.tsx`
+  Notes: Add "Create Invoice" button next to "Export CSV" on billing page. When clicked: show dialog to select project (required for invoices — one invoice per project). Pre-populate line items from billing data for the selected date range: group by epic → task type, calculate hours × rate per line. User can review and adjust before creating. On confirm: create invoice via mutation, redirect to invoice detail page.
+
+- [ ] **TASK-075** — Build Invoices list page
+  Files: `src/app/(dashboard)/invoices/page.tsx`, `src/components/invoices/InvoiceList.tsx`
+  Notes: Page with filter tabs: All, Draft, Sent, Paid, Overdue. Invoice rows showing: invoice number, client name, project name, issue date, total amount with currency, status badge (draft=slate, sent=blue, paid=emerald, overdue=red). Click to open invoice detail. "New Invoice" button (opens create flow). Empty state per filter. Add "Invoices" link to sidebar navigation between Billing and Settings.
+
+- [ ] **TASK-076** — Build Invoice detail/editor page
+  Files: `src/app/(dashboard)/invoices/[invoiceId]/page.tsx`, `src/components/invoices/InvoiceForm.tsx`
+  Notes: Two-column or stacked layout. Sender block (business name, address, VAT ID — pre-filled from snapshot, editable in draft). Recipient block (client name, address — editable). Line items table: each row has description, hours (number), rate (number), amount (calculated). Add/remove rows. Below table: subtotal, tax rate %, tax amount, total. Payment details section (bank, IBAN, BIC, terms). Notes textarea. Action buttons based on status: Draft → "Save", "Mark as Sent", "Export PDF", "Delete". Sent → "Mark as Paid", "Export PDF". Paid → "Export PDF" only.
+
+- [ ] **TASK-077** — Build Invoice PDF export
+  Files: `src/components/invoices/InvoicePdfExport.tsx`
+  Notes: Use @react-pdf/renderer to generate a professional invoice PDF. Layout: sender info top-left, recipient top-right, invoice number + dates below, line items table with headers (Description, Hours, Rate, Amount), totals section right-aligned (Subtotal, Tax, Total), payment details at bottom, optional notes. Clean typography (Helvetica), proper spacing. "Export PDF" button triggers browser download. Filename: `{invoiceNumber}.pdf`.
+
+- [ ] **TASK-078** — Add invoice status management and overdue detection
+  Files: `convex/invoices.ts`, `src/components/invoices/InvoiceList.tsx`
+  Notes: Status transitions: draft→sent (sets issueDate if not already), sent→paid, sent→overdue (manual or based on dueDate). Add a visual indicator for overdue invoices (red badge, past-due days count). Consider a Convex scheduled function or cron job to auto-mark overdue invoices (optional — can also be manual for MVP).
+
+- [ ] **TASK-079** — Update project cards and billing to show currency
+  Files: `src/app/(dashboard)/projects/page.tsx`, `src/components/kanban/TaskCard.tsx`, `src/app/(dashboard)/page.tsx`
+  Notes: Project cards: show hourly rate with correct currency symbol (€85/h or $120/h). Dashboard stat cards: show amounts with currency. Ensure currency flows through from project → billing → invoice consistently. Use the `formatAmount` helper everywhere.
+
+- [ ] **TASK-080** — Update sidebar navigation with new routes
+  Files: `src/components/layout/Sidebar.tsx`
+  Notes: Add "Invoices" nav item (Receipt icon) between Billing and a new "Settings" item (Settings icon). Both follow the existing dark sidebar nav item pattern with active states.
+
+- [ ] **TASK-081** — Final integration test and polish
+  Files: All new files
+  Notes: End-to-end test: set up business settings with EUR → create project with USD override → track hours → generate invoice from billing → edit line items → export PDF → mark as sent → mark as paid. Verify: currency symbols correct throughout, invoice numbers increment properly, PDF looks professional, all status transitions work, settings are properly snapshotted on invoice creation. Visual polish pass on all new screens.
 
 ---
 
@@ -283,8 +435,10 @@ Each phase is designed to be completed in 1–3 coding sessions. Here's how to a
 - **Phase 3:** 2–3 sessions (timer logic has many edge cases)
 - **Phase 4:** 1–2 sessions (mostly queries and UI)
 - **Phase 5:** 1–2 sessions (polish and testing)
+- **Phase 6:** 3–4 sessions (full visual redesign + hourly rate feature)
+- **Phase 7:** 4–6 sessions (multi-currency + invoice generation + PDF export + business settings)
 
-**Total estimated sessions: 8–14**
+**Total estimated sessions: 15–24**
 
 ### When You Hit a Problem
 

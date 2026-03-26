@@ -59,6 +59,7 @@ graph TD
 | Fonts | Inter, JetBrains Mono | Typography (via next/font or Google Fonts) |
 | Date handling | date-fns | Date formatting and manipulation |
 | CSV Export | papaparse | CSV generation for billing export |
+| PDF Generation | @react-pdf/renderer | Invoice PDF generation with React components |
 
 ### Repository Structure
 
@@ -72,7 +73,9 @@ velo/
 │   ├── epics.ts            # Epic mutations & queries
 │   ├── tasks.ts            # Task mutations & queries
 │   ├── timeEntries.ts      # Time entry mutations & queries
-│   └── billing.ts          # Billing aggregation queries
+│   ├── billing.ts          # Billing aggregation queries
+│   ├── invoices.ts         # Invoice mutations & queries
+│   └── userSettings.ts     # User settings mutations & queries
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx      # Root layout with providers
@@ -90,8 +93,14 @@ velo/
 │   │   ├── tasks/
 │   │   │   └── [taskId]/
 │   │   │       └── page.tsx        # Task detail view
-│   │   └── billing/
-│   │       └── page.tsx    # Billing summary view
+│   │   ├── billing/
+│   │   │   └── page.tsx    # Billing summary view
+│   │   ├── invoices/
+│   │   │   ├── page.tsx            # Invoices list
+│   │   │   └── [invoiceId]/
+│   │   │       └── page.tsx        # Invoice detail/editor
+│   │   └── settings/
+│   │       └── page.tsx    # Business settings
 │   ├── components/
 │   │   ├── ui/             # Generic UI components (Button, Input, Badge, etc.)
 │   │   ├── layout/
@@ -110,10 +119,17 @@ velo/
 │   │   │   ├── TimerControl.tsx
 │   │   │   ├── TimerDisplay.tsx
 │   │   │   └── ManualTimeEntry.tsx
-│   │   └── billing/
-│   │       ├── BillingSummary.tsx
-│   │       ├── BillingTable.tsx
-│   │       └── BillingExport.tsx
+│   │   ├── billing/
+│   │   │   ├── BillingSummary.tsx
+│   │   │   ├── BillingTable.tsx
+│   │   │   └── BillingExport.tsx
+│   │   ├── invoices/
+│   │   │   ├── InvoiceForm.tsx
+│   │   │   ├── InvoicePreview.tsx
+│   │   │   ├── InvoiceList.tsx
+│   │   │   └── InvoicePdfExport.tsx
+│   │   └── settings/
+│   │       └── BusinessSettingsForm.tsx
 │   ├── hooks/
 │   │   ├── useTimer.ts
 │   │   ├── useActiveTimer.ts
@@ -181,6 +197,8 @@ Managed by Convex Auth. Stores authenticated user data.
 | name | string | Project name |
 | clientName | string? | Client name (optional — personal projects may not have one) |
 | description | string? | Short description |
+| hourlyRate | number? | Hourly rate (optional — for billing calculations) |
+| currency | string? | Currency code: "EUR", "USD", "CHF", "GBP" (defaults to global setting) |
 | status | "active" \| "archived" | Project status |
 | createdAt | number | Timestamp |
 | updatedAt | number | Timestamp |
@@ -231,16 +249,69 @@ Managed by Convex Auth. Stores authenticated user data.
 | isManual | boolean | Whether this was a manual entry |
 | createdAt | number | Timestamp |
 
+#### userSettings
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"userSettings"> | Auto-generated |
+| userId | Id<"users"> | Owner (unique per user) |
+| defaultCurrency | string | Default currency code: "EUR", "USD", "CHF", "GBP" etc. (default: "EUR") |
+| businessName | string? | Freelancer's business/company name |
+| businessAddress | string? | Full address (multi-line) |
+| vatId | string? | USt-ID / VAT number |
+| taxRate | number? | Default tax rate in % (e.g. 19 for 19%) |
+| bankName | string? | Bank name for payment details |
+| iban | string? | IBAN |
+| bic | string? | BIC/SWIFT code |
+| paymentTermDays | number? | Default payment term in days (e.g. 14, 30) |
+| invoicePrefix | string? | Prefix for invoice numbers (e.g. "INV", "RE") |
+| nextInvoiceNumber | number | Next auto-increment invoice number (default: 1) |
+
+#### invoices
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"invoices"> | Auto-generated |
+| userId | Id<"users"> | Owner |
+| projectId | Id<"projects"> | Associated project |
+| invoiceNumber | string | Formatted invoice number (e.g. "RE-2026-001") |
+| status | "draft" \| "sent" \| "paid" \| "overdue" | Invoice status |
+| currency | string | Currency code used (e.g. "EUR", "USD") |
+| issueDate | number | Invoice issue date timestamp |
+| dueDate | number | Payment due date timestamp |
+| clientName | string | Client name (snapshot at creation) |
+| clientAddress | string? | Client billing address |
+| senderName | string | Sender business name (snapshot) |
+| senderAddress | string? | Sender address (snapshot) |
+| vatId | string? | USt-ID (snapshot) |
+| taxRate | number? | Tax rate in % (snapshot) |
+| bankName | string? | Bank name (snapshot) |
+| iban | string? | IBAN (snapshot) |
+| bic | string? | BIC (snapshot) |
+| paymentTermDays | number? | Payment term (snapshot) |
+| lineItems | array | Array of { description: string, hours: number, rate: number, amount: number } |
+| subtotal | number | Sum of all line item amounts (net) |
+| taxAmount | number? | Calculated tax amount |
+| total | number | Grand total (subtotal + tax) |
+| notes | string? | Optional notes/remarks on invoice |
+| periodStart | number | Billing period start timestamp |
+| periodEnd | number | Billing period end timestamp |
+| createdAt | number | Timestamp |
+| updatedAt | number | Timestamp |
+
 ### Relationships
 
 ```mermaid
 erDiagram
     users ||--o{ projects : owns
+    users ||--|| userSettings : has
     projects ||--o{ epics : contains
     projects ||--o{ tasks : contains
+    projects ||--o{ invoices : "billed via"
     epics ||--o{ tasks : "optionally groups"
     tasks ||--o{ timeEntries : tracks
     users ||--o{ timeEntries : creates
+    users ||--o{ invoices : creates
 ```
 
 ### Indexes
@@ -264,6 +335,14 @@ timeEntries: defineTable({...})
   .index("by_projectId", ["projectId"])
   .index("by_userId", ["userId"])
   .index("by_userId_startTime", ["userId", "startTime"]),
+
+userSettings: defineTable({...})
+  .index("by_userId", ["userId"]),
+
+invoices: defineTable({...})
+  .index("by_userId", ["userId"])
+  .index("by_projectId", ["projectId"])
+  .index("by_userId_status", ["userId", "status"]),
 ```
 
 ---
@@ -304,17 +383,28 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | Query | Args | Returns | Auth |
 |-------|------|---------|------|
 | `billing.summary` | { startDate, endDate, projectId? } | Aggregated billing data | Required |
-| `billing.summaryByProject` | { startDate, endDate } | Per-project hour totals | Required |
+| `billing.summaryByProject` | { startDate, endDate } | Per-project hour totals + calculated amounts (hours × hourlyRate) | Required |
 | `billing.summaryByEpic` | { projectId, startDate, endDate } | Per-epic hour totals | Required |
 | `billing.summaryByTaskType` | { projectId?, startDate, endDate } | Per-task-type hour totals | Required |
+
+#### User Settings
+| Query | Args | Returns | Auth |
+|-------|------|---------|------|
+| `userSettings.get` | — | UserSettings for current user (or defaults) | Required |
+
+#### Invoices
+| Query | Args | Returns | Auth |
+|-------|------|---------|------|
+| `invoices.list` | { status?, projectId? } | Invoice[] for current user | Required |
+| `invoices.get` | { invoiceId } | Single invoice with all details | Required, must be owner |
 
 ### Mutations (Writes)
 
 #### Projects
 | Mutation | Args | Effect |
 |----------|------|--------|
-| `projects.create` | { name, clientName?, description? } | Create new project |
-| `projects.update` | { projectId, name?, clientName?, description?, status? } | Update project |
+| `projects.create` | { name, clientName?, description?, hourlyRate?, currency? } | Create new project |
+| `projects.update` | { projectId, name?, clientName?, description?, hourlyRate?, currency?, status? } | Update project |
 | `projects.archive` | { projectId } | Set status to "archived" |
 
 #### Epics
@@ -341,6 +431,19 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | `timeEntries.createManual` | { taskId, startTime, endTime, description? } | Add manual time entry |
 | `timeEntries.update` | { timeEntryId, startTime?, endTime?, description? } | Edit time entry |
 | `timeEntries.delete` | { timeEntryId } | Delete time entry |
+
+#### User Settings
+| Mutation | Args | Effect |
+|----------|------|--------|
+| `userSettings.upsert` | { defaultCurrency?, businessName?, businessAddress?, vatId?, taxRate?, bankName?, iban?, bic?, paymentTermDays?, invoicePrefix?, nextInvoiceNumber? } | Create or update user settings |
+
+#### Invoices
+| Mutation | Args | Effect |
+|----------|------|--------|
+| `invoices.create` | { projectId, periodStart, periodEnd, clientAddress?, notes?, lineItems? } | Generate invoice from billing data, auto-assign invoice number |
+| `invoices.update` | { invoiceId, clientAddress?, notes?, lineItems?, taxRate?, dueDate? } | Update draft invoice |
+| `invoices.updateStatus` | { invoiceId, status } | Mark invoice as sent/paid/overdue |
+| `invoices.delete` | { invoiceId } | Delete draft invoice (only drafts can be deleted) |
 
 ---
 
@@ -382,7 +485,19 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 - **As a** freelancer, **I want to** see an overview of my active work when I open Velo, **so that** I know what needs attention today.
 - **Acceptance criteria:** Dashboard shows: active projects count, currently running timer (if any), recent tasks, today's tracked hours.
 
-### US-010: Authentication
+### US-010: Multi-Currency Support
+- **As a** freelancer with international clients, **I want to** set a default currency and override it per project, **so that** billing amounts display in the correct currency for each client.
+- **Acceptance criteria:** Global default currency in settings. Per-project currency override. Currency symbol shown in billing, invoices, and project cards. Supported: EUR, USD, CHF, GBP (extensible).
+
+### US-011: Invoice Generation
+- **As a** freelancer, **I want to** generate professional invoices from my tracked hours, **so that** I can send them directly to clients without using a separate invoicing tool.
+- **Acceptance criteria:** Can create an invoice from billing data for a project/date range. Invoice includes: sender info, client info, line items (hours × rate), net/tax/gross totals, payment details, invoice number. Export as PDF. Invoice status tracking (draft/sent/paid/overdue).
+
+### US-012: Business Settings
+- **As a** freelancer, **I want to** store my business details (name, address, VAT ID, bank details), **so that** they are automatically filled into invoices.
+- **Acceptance criteria:** Settings page for business info. Auto-populated on new invoices. Editable per invoice if needed.
+
+### US-013: Authentication
 - **As a** user, **I want to** securely log in, **so that** my data is protected.
 - **Acceptance criteria:** Can sign up and log in via Convex Auth. Unauthenticated users are redirected to login. All data is scoped to the authenticated user.
 
@@ -408,6 +523,11 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | FR-012 | Project sidebar | P0 | Navigation sidebar with projects | Lists all active projects. Click to open Kanban board. Shows currently active project. |
 | FR-013 | Task detail view | P1 | Full task view with all information | Shows title, description, type, status, epic, priority, time entries list, total time. |
 | FR-014 | Active timer indicator | P0 | Global timer visibility | Currently running timer visible in header/sidebar at all times. Click to navigate to task. |
+| FR-015 | Multi-currency support | P1 | Support multiple currencies per project | Global default currency in user settings. Per-project currency override. Supported: EUR (€), USD ($), CHF (CHF), GBP (£). Currency symbol shown in billing views, invoices, project cards. |
+| FR-016 | Invoice generation | P1 | Create professional invoices from tracked hours | Generate invoice for a project + date range. Auto-populate line items from billing data. Include sender info, client info, line items, subtotal, tax, total, payment details. Formatted invoice number (prefix + year + sequence). Export as PDF. |
+| FR-017 | Invoice management | P1 | Track invoice lifecycle | Invoice statuses: draft, sent, paid, overdue. Invoice list view with filters. Edit draft invoices. Mark as sent/paid. Auto-increment invoice numbers. |
+| FR-018 | Business settings | P1 | Store freelancer business details | Settings page: business name, address, VAT ID, tax rate, bank details (name, IBAN, BIC), payment terms, invoice number prefix. Used as defaults when creating invoices. |
+| FR-019 | Invoice PDF export | P1 | Export invoices as professional PDFs | Clean, professional PDF layout. Includes all invoice details, line items table, payment instructions. Proper formatting with sender/recipient blocks, totals section. |
 
 ---
 
@@ -499,10 +619,55 @@ All data access happens through Convex queries (reads) and mutations (writes). N
   - No data: "No tracked time for this period."
   - Filtered: shows applied filters as chips
 
+### Screen: Invoices List
+- **Path:** `/invoices`
+- **Layout:** Sidebar + main content
+- **Elements:**
+  - Page title "Invoices" with "New Invoice" button
+  - Filter tabs: All, Draft, Sent, Paid, Overdue
+  - Invoice cards/rows: invoice number, client name, project name, date, amount, status badge (colored)
+  - Click to open invoice detail
+- **States:**
+  - Loading: skeleton rows
+  - Empty: "No invoices yet. Create one from the Billing page." with CTA
+  - Filtered empty: "No [status] invoices."
+
+### Screen: Invoice Detail / Editor
+- **Path:** `/invoices/[invoiceId]`
+- **Layout:** Sidebar + form/preview
+- **Elements:**
+  - Invoice header: invoice number, status badge, issue date, due date
+  - Sender block: business name, address, VAT ID (from settings, editable)
+  - Recipient block: client name, client address (editable)
+  - Line items table: description, hours, rate, amount per line. Add/remove/edit rows.
+  - Totals section: subtotal (net), tax rate + tax amount, grand total (gross)
+  - Payment details: bank name, IBAN, BIC, payment terms
+  - Notes textarea
+  - Actions: "Save Draft", "Mark as Sent", "Mark as Paid", "Export PDF", "Delete" (drafts only)
+- **States:**
+  - Draft: fully editable
+  - Sent: read-only with "Mark as Paid" button
+  - Paid: read-only with green status
+  - Overdue: read-only with red status indicator
+
+### Screen: Business Settings
+- **Path:** `/settings`
+- **Layout:** Sidebar + form (max-width-lg)
+- **Elements:**
+  - Section "General": Default currency dropdown (EUR, USD, CHF, GBP)
+  - Section "Business Details": Business name, address (textarea), VAT ID
+  - Section "Tax": Default tax rate (number input with % suffix)
+  - Section "Payment": Bank name, IBAN, BIC, payment term days
+  - Section "Invoice Numbering": Prefix (e.g. "RE", "INV"), next number preview
+  - Save button
+- **States:**
+  - Loading: skeleton form
+  - Saved: success toast "Settings saved."
+
 ### Screen: Project Settings
 - **Path:** `/projects/[projectId]/settings`
 - **Layout:** Sidebar + form
-- **Elements:** Project name input, client name input, description textarea, archive button (with confirmation)
+- **Elements:** Project name input, client name input, description textarea, currency dropdown (defaults to global), hourly rate input with currency symbol, archive button (with confirmation)
 
 ---
 
@@ -604,6 +769,20 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 | No tracked time in date range | Show empty state: "No tracked time for this period." |
 | Cross-midnight timer | Duration calculated correctly. Entry attributed to the day it started. |
 
+### Invoice Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| Create invoice with no tracked hours | Allow it — user may want to create a manual invoice. Show warning: "No tracked hours for this period." Line items editable. |
+| Project currency differs from previous invoices | Each invoice snapshots the currency at creation time. Changing project currency doesn't affect existing invoices. |
+| Delete draft invoice | Allowed with confirmation. Invoice number is NOT recycled (gap in numbering is acceptable). |
+| Delete sent/paid invoice | Not allowed. Show message: "Only draft invoices can be deleted." |
+| Mark overdue invoice as paid | Allowed — changes status to "paid" with the current date. |
+| Missing business settings when creating invoice | Show warning with link to settings: "Complete your business details in Settings to include them on invoices." Allow creation anyway (fields will be blank). |
+| Currency symbol display | EUR → "€", USD → "$", GBP → "£", CHF → "CHF". Symbol placed before amount for EUR/USD/GBP, after for CHF. |
+| Tax rate 0% | Valid — shows "0%" tax line with €0.00 amount. Total equals subtotal. |
+| No tax rate set | Don't show tax line at all. Total equals subtotal. |
+
 ### General Error Handling
 
 | Error | UI Response |
@@ -630,6 +809,7 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 | lucide-react | Icons |
 | date-fns | Date formatting |
 | papaparse | CSV export |
+| @react-pdf/renderer | Invoice PDF generation |
 | clsx | Conditional class names |
 | tailwind-merge | Tailwind class conflict resolution |
 
@@ -662,7 +842,6 @@ The following are explicitly NOT included in this PRD and should not be built in
 - Comments or activity feed on tasks
 - Dark mode
 - API access for external tools
-- Invoice generation (only billing summary and CSV export)
 - Multi-language support
 - Custom task types beyond Story, Task, Bug, Incident
 
@@ -670,8 +849,7 @@ The following are explicitly NOT included in this PRD and should not be built in
 
 ## 15. Open Questions
 
-1. **Hourly rate per project?** Should Velo store an hourly rate per project/client to calculate billable amounts, or is the hour count sufficient for now?
-   - *Recommendation:* Add an optional `hourlyRate` field to projects. Show calculated amounts in billing view but don't make it required.
+1. ~~**Hourly rate per project?**~~ **RESOLVED:** Optional `hourlyRate` field added to projects table. Billing view calculates amounts as `hours × hourlyRate`. Projects without a rate show hours only.
 
 2. **Task descriptions format?** Plain text or Markdown support?
    - *Recommendation:* Start with plain textarea. Markdown can be added later if needed.

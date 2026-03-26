@@ -17,10 +17,16 @@ export default function EpicsPage() {
 
   if (project === undefined || epics === undefined) {
     return (
-      <div className="flex flex-col gap-4 max-w-2xl animate-pulse">
-        <div className="h-4 w-32 bg-border rounded" />
+      <div className="flex flex-col gap-5 max-w-2xl animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 bg-surface rounded-lg" />
+          <div className="space-y-2">
+            <div className="h-5 w-24 bg-surface rounded" />
+            <div className="h-3 w-32 bg-surface rounded" />
+          </div>
+        </div>
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-14 bg-border rounded-md" />
+          <div key={i} className="h-16 bg-surface rounded-xl border border-border/40" />
         ))}
       </div>
     );
@@ -31,17 +37,17 @@ export default function EpicsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-8 max-w-2xl">
       <div className="flex items-center gap-3">
         <Link
           href={`/projects/${projectId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
           aria-label="Back to board"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-xl font-semibold text-text-primary">Epics</h1>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Epics</h1>
           <p className="text-sm text-text-secondary mt-0.5">{project.name}</p>
         </div>
       </div>

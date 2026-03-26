@@ -35,30 +35,36 @@ export function ActiveTimerBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-md px-3 py-1.5 text-sm">
-      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+    <div className="flex items-center gap-2.5 bg-gradient-to-r from-emerald-50 to-teal-50/60 border border-emerald-200/60 rounded-xl px-3.5 py-2 text-sm shadow-xs">
+      <span className="relative flex items-center justify-center w-5 h-5">
+        <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-pulse-soft" />
+        <span className="w-2 h-2 rounded-full bg-emerald-500 relative" />
+      </span>
       {task ? (
         <Link
           href={`/tasks/${activeEntry.taskId}`}
-          className="font-medium text-green-800 hover:underline truncate max-w-[140px]"
+          className="font-semibold text-text-primary hover:text-primary transition-colors truncate max-w-[140px] text-[13px]"
         >
           {task.title}
         </Link>
       ) : (
-        <span className="font-medium text-green-800 text-xs">Loading…</span>
+        <span className="font-medium text-text-secondary text-xs">Loading…</span>
       )}
       {project && (
-        <span className="text-green-600 text-xs truncate max-w-[100px]">
+        <span className="text-text-muted text-[11px] truncate max-w-[100px] hidden sm:inline">
           {project.name}
         </span>
       )}
-      <TimerDisplay startTime={activeEntry.startTime} className="text-green-700 text-xs" />
+      <TimerDisplay
+        startTime={activeEntry.startTime}
+        className="text-emerald-700 text-xs font-mono font-semibold tabular-nums bg-emerald-100/60 px-2 py-0.5 rounded-md"
+      />
       <button
         onClick={handleStop}
-        className="text-green-700 hover:text-red-600 transition-colors ml-1"
+        className="flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-all duration-150 ml-0.5"
         aria-label="Stop timer"
       >
-        <Square className="w-4 h-4" />
+        <Square className="w-3.5 h-3.5" />
       </button>
     </div>
   );

@@ -13,6 +13,7 @@ export type BillingEntry = {
   projectId: Id<"projects">;
   projectName: string;
   clientName: string | null;
+  hourlyRate: number | null;
   startTime: number;
   durationMs: number;
   description: string | null;
@@ -61,10 +62,10 @@ export const entries = query({
 
     // Deduplicated project lookups
     const projectIds = [...new Set(completed.map((e) => e.projectId))];
-    const projectMap = new Map<Id<"projects">, { name: string; clientName: string | undefined }>();
+    const projectMap = new Map<Id<"projects">, { name: string; clientName: string | undefined; hourlyRate: number | undefined }>();
     for (const projectId of projectIds) {
       const project = await ctx.db.get(projectId);
-      if (project) projectMap.set(projectId, { name: project.name, clientName: project.clientName });
+      if (project) projectMap.set(projectId, { name: project.name, clientName: project.clientName, hourlyRate: project.hourlyRate });
     }
 
     return completed
@@ -83,6 +84,7 @@ export const entries = query({
           projectId: e.projectId,
           projectName: project.name,
           clientName: project.clientName ?? null,
+          hourlyRate: project.hourlyRate ?? null,
           startTime: e.startTime,
           durationMs: e.duration ?? 0,
           description: e.description ?? null,
@@ -121,6 +123,23 @@ export const summary = query({
     const projectCount = new Set(completed.map((e) => e.projectId)).size;
     const taskCount = new Set(completed.map((e) => e.taskId)).size;
 
+    // Calculate total amount for projects with hourly rates
+    const projectIds = [...new Set(completed.map((e) => e.projectId))];
+    const projectMap = new Map<Id<"projects">, { hourlyRate: number | undefined }>();
+    for (const projectId of projectIds) {
+      const project = await ctx.db.get(projectId);
+      if (project) projectMap.set(projectId, { hourlyRate: project.hourlyRate });
+    }
+
+    let totalAmount: number | null = null;
+    for (const e of completed) {
+      const project = projectMap.get(e.projectId);
+      if (project?.hourlyRate) {
+        const hours = (e.duration ?? 0) / 3_600_000;
+        totalAmount = (totalAmount ?? 0) + hours * project.hourlyRate;
+      }
+    }
+
     const runningEntry = running
       ? {
           taskId: running.taskId,
@@ -130,6 +149,6 @@ export const summary = query({
         }
       : null;
 
-    return { totalDurationMs, runningEntry, projectCount, taskCount };
+    return { totalDurationMs, totalAmount, runningEntry, projectCount, taskCount };
   },
 });

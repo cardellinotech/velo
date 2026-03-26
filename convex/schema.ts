@@ -11,6 +11,7 @@ export default defineSchema({
     name: v.string(),
     clientName: v.optional(v.string()),
     description: v.optional(v.string()),
+    hourlyRate: v.optional(v.number()),
     status: v.union(v.literal("active"), v.literal("archived")),
     createdAt: v.number(),
     updatedAt: v.number(),

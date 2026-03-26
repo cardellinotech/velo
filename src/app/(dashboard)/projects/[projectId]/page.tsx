@@ -11,6 +11,7 @@ import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { KanbanFilters } from "@/components/kanban/KanbanFilters";
 import type { KanbanFilterState } from "@/components/kanban/KanbanFilters";
 import { TaskForm } from "@/components/tasks/TaskForm";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { TaskStatus } from "@/lib/constants";
 
 const DEFAULT_FILTERS: KanbanFilterState = {
@@ -33,13 +34,27 @@ export default function ProjectBoardPage() {
     setTaskFormOpen(true);
   }
 
+  useKeyboardShortcuts({
+    n: () => handleAddTask("todo"),
+    N: () => handleAddTask("todo"),
+  }, project !== undefined && project !== null);
+
   if (project === undefined) {
     return (
-      <div className="flex flex-col gap-4 animate-pulse">
-        <div className="h-6 w-48 bg-border rounded" />
-        <div className="flex gap-4">
+      <div className="flex flex-col gap-6 animate-pulse">
+        <div className="flex items-end justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-48 bg-surface rounded-lg" />
+            <div className="h-4 w-24 bg-surface rounded" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 w-20 bg-surface rounded-lg" />
+            <div className="h-9 w-24 bg-surface rounded-lg" />
+          </div>
+        </div>
+        <div className="flex gap-5">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex-1 h-64 bg-border rounded-lg" />
+            <div key={i} className="w-[272px] shrink-0 h-64 bg-surface/50 rounded-xl border border-border/40" />
           ))}
         </div>
       </div>
@@ -52,26 +67,26 @@ export default function ProjectBoardPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">{project.name}</h1>
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">{project.name}</h1>
             {project.clientName && (
               <p className="text-sm text-text-secondary mt-0.5">{project.clientName}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Link
               href={`/projects/${projectId}/epics`}
-              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
+              className="flex items-center gap-1.5 text-[13px] text-text-secondary hover:text-text-primary font-medium px-3 py-2 rounded-lg hover:bg-surface transition-all duration-150"
             >
               <Layers className="w-4 h-4" />
               Epics
             </Link>
             <Link
               href={`/projects/${projectId}/settings`}
-              className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary px-3 py-1.5 rounded-md hover:bg-surface transition-colors"
+              className="flex items-center gap-1.5 text-[13px] text-text-secondary hover:text-text-primary font-medium px-3 py-2 rounded-lg hover:bg-surface transition-all duration-150"
             >
               <Settings className="w-4 h-4" />
               Settings

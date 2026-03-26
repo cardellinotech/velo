@@ -10,19 +10,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses = {
   primary:
-    "bg-primary text-white hover:bg-primary-hover focus-visible:outline-primary",
+    "bg-gradient-primary text-white hover:opacity-90 shadow-xs hover:shadow-md focus-visible:outline-primary",
   secondary:
-    "bg-white text-text-primary border border-border hover:bg-surface focus-visible:outline-primary",
+    "bg-white text-text-primary border border-border/60 hover:border-slate-300 hover:bg-surface hover:shadow-xs focus-visible:outline-primary",
   ghost:
     "bg-transparent text-text-primary hover:bg-surface focus-visible:outline-primary",
   destructive:
-    "bg-error text-white hover:bg-red-600 focus-visible:outline-error",
+    "bg-error text-white hover:bg-red-600 shadow-xs hover:shadow-md focus-visible:outline-error",
 };
 
 const sizeClasses = {
-  sm: "h-8 px-3 text-xs rounded-sm",
-  md: "h-9 px-4 text-sm rounded-md",
-  lg: "h-11 px-5 text-base rounded-md",
+  sm: "h-8 px-3 text-xs rounded-lg",
+  md: "h-9 px-4 text-sm rounded-lg",
+  lg: "h-11 px-5 text-base rounded-xl",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -43,7 +43,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          "inline-flex items-center justify-center gap-2 font-medium transition-colors duration-100",
+          "inline-flex items-center justify-center gap-2 font-medium transition-all duration-150",
           "focus-visible:outline-2 focus-visible:outline-offset-2",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantClasses[variant],

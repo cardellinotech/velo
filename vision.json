@@ -23,13 +23,18 @@
       "Optionale Epic-Zuordnung für Aufgaben",
       "Integrierter Time-Tracker pro Aufgabe",
       "Kanban Board View mit Drag & Drop",
-      "Abrechnungsübersicht: gearbeitete Zeit pro Kunde/Projekt"
+      "Abrechnungsübersicht: gearbeitete Zeit pro Kunde/Projekt",
+      "Optionaler Stundensatz pro Projekt für automatische Betragsberechnung in der Abrechnung",
+      "Multi-Currency Support (EUR, USD, CHF, GBP) mit globalem Standard und Projekt-Override",
+      "Rechnungserstellung aus getrackten Stunden mit PDF-Export",
+      "Geschäftsdaten-Verwaltung (Firmenname, Adresse, USt-ID, Bankverbindung)",
+      "Rechnungs-Lifecycle: Entwurf → Versendet → Bezahlt → Überfällig"
     ],
     "platform": "Web-App (Next.js)",
     "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",
     "magicMoments": [
       "Aufgabe auf dem Kanban Board verschieben und sehen, dass der Timer nahtlos mitläuft.",
-      "Am Monatsende auf 'Abrechnung erstellen' klicken und eine saubere Übersicht der getrackten Stunden pro Kunde bekommen."
+      "Am Monatsende auf 'Rechnung erstellen' klicken und eine professionelle Rechnung mit Positionen, Steuer und Zahlungsdetails generieren — direkt als PDF exportieren und an den Kunden senden."
     ]
   },
   "audience": {
@@ -54,7 +59,7 @@
   },
   "feeling": {
     "brandPersonality": "Modern, clean, freundlich aber professionell. Wie Notion oder Todoist — aufgeräumt und einladend ohne verspielt zu sein.",
-    "visualMood": "Hell, aufgeräumt, professionell. Klare Typografie, viel Whitespace, subtile Farben.",
+    "visualMood": "Premium-Feeling mit Tiefe und visueller Hierarchie. Subtile Glassmorphism-Elemente, weiche Gradients, und bewusst eingesetzte Mikrointeraktionen. Inspiriert von Linear, Raycast und Arc Browser — modern, poliert, professionell.",
     "toneOfVoice": "Direkt, freundlich, technisch-kompetent. Keine Marketing-Sprache, kein Enterprise-Jargon.",
     "antiPatterns": [
       "Kein Feature-Monster wie Jira — keine 50 Konfigurationsoptionen pro Aufgabe",

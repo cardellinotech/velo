@@ -16,16 +16,22 @@ interface BillingExportProps {
 
 export function BillingExport({ entries, startDate, endDate }: BillingExportProps) {
   function handleExport() {
-    const rows = entries.map((entry) => ({
-      Project: entry.projectName,
-      Client: entry.clientName ?? "",
-      Epic: entry.epicName ?? "",
-      Task: entry.taskTitle,
-      "Task Type": TASK_TYPES[entry.taskType].label,
-      Date: formatDate(entry.startTime),
-      Hours: (entry.durationMs / 3_600_000).toFixed(2),
-      Description: entry.description ?? "",
-    }));
+    const rows = entries.map((entry) => {
+      const hours = entry.durationMs / 3_600_000;
+      const amount = entry.hourlyRate ? hours * entry.hourlyRate : null;
+      return {
+        Project: entry.projectName,
+        Client: entry.clientName ?? "",
+        Epic: entry.epicName ?? "",
+        Task: entry.taskTitle,
+        "Task Type": TASK_TYPES[entry.taskType].label,
+        Date: formatDate(entry.startTime),
+        Hours: hours.toFixed(2),
+        "Rate (€/h)": entry.hourlyRate ?? "",
+        "Amount (€)": amount !== null ? amount.toFixed(2) : "",
+        Description: entry.description ?? "",
+      };
+    });
 
     const csv = Papa.unparse(rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

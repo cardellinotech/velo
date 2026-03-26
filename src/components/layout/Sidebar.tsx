@@ -10,6 +10,7 @@ import {
   Receipt,
   LogOut,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,31 +32,62 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-border bg-surface">
+    <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-white/[0.06] relative overflow-hidden">
+      {/* Background gradient */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background: "linear-gradient(180deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)",
+        }}
+      />
+      {/* Subtle noise texture overlay */}
+      <div
+        className="absolute inset-0 -z-10 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+        }}
+      />
+
       {/* Brand */}
-      <div className="flex h-14 items-center px-4 border-b border-border">
-        <span className="text-base font-semibold text-text-primary tracking-tight">
+      <div className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06]">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/20">
+          <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+        </div>
+        <span className="text-lg font-semibold text-white tracking-tight">
           Velo
         </span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="Main navigation">
+      <nav className="flex-1 overflow-y-auto py-4 px-3" aria-label="Main navigation">
+        <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+          Menu
+        </p>
         <ul className="flex flex-col gap-0.5">
           {navItems.map(({ label, href, icon: Icon }) => (
             <li key={href}>
               <Link
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
                   isActive(href)
-                    ? "bg-primary text-white"
-                    : "text-text-secondary hover:bg-border/50 hover:text-text-primary"
+                    ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
                 )}
                 aria-current={isActive(href) ? "page" : undefined}
               >
-                <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <div className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                  isActive(href)
+                    ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                    : "text-slate-500 group-hover:text-slate-400"
+                )}>
+                  <Icon className="w-[18px] h-[18px]" />
+                </div>
                 {label}
+                {isActive(href) && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                )}
               </Link>
             </li>
           ))}
@@ -63,41 +95,52 @@ export function Sidebar() {
 
         {/* Active projects */}
         {projects && projects.length > 0 && (
-          <div className="mt-4">
-            <p className="px-3 mb-1 text-xs font-medium text-text-secondary uppercase tracking-wide">
-              Projects
-            </p>
-            <ul className="flex flex-col gap-0.5">
-              {projects.map((project) => {
-                const href = `/projects/${project._id}`;
-                const active = pathname.startsWith(href);
-                return (
-                  <li key={project._id}>
-                    <Link
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors duration-100",
-                        active
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-text-secondary hover:bg-border/50 hover:text-text-primary"
-                      )}
-                    >
-                      <ChevronRight className="w-3 h-3 shrink-0 opacity-50" aria-hidden="true" />
-                      <span className="truncate">{project.name}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <div className="mt-6">
+            <div className="border-t border-white/[0.06] pt-5">
+              <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+                Projects
+              </p>
+              <ul className="flex flex-col gap-0.5">
+                {projects.map((project) => {
+                  const href = `/projects/${project._id}`;
+                  const active = pathname.startsWith(href);
+                  return (
+                    <li key={project._id}>
+                      <Link
+                        href={href}
+                        className={cn(
+                          "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150",
+                          active
+                            ? "text-white bg-white/[0.08] font-medium"
+                            : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-2 h-2 rounded-full shrink-0 transition-all duration-150",
+                          active
+                            ? "bg-indigo-400 shadow-sm shadow-indigo-400/50"
+                            : "bg-slate-600 group-hover:bg-slate-500"
+                        )} />
+                        <span className="truncate">{project.name}</span>
+                        <ChevronRight className={cn(
+                          "w-3 h-3 shrink-0 ml-auto transition-all duration-150",
+                          active ? "text-slate-400 opacity-100" : "opacity-0 group-hover:opacity-60 text-slate-500"
+                        )} />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         )}
       </nav>
 
       {/* Logout */}
-      <div className="border-t border-border p-2">
+      <div className="border-t border-white/[0.06] p-3">
         <button
           onClick={() => void signOut()}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-text-secondary hover:bg-border/50 hover:text-text-primary transition-colors duration-100"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all duration-150 hover:text-slate-300 hover:bg-white/[0.04]"
         >
           <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
           Sign out

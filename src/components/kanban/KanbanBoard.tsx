@@ -26,6 +26,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps) {
   const toast = useToast();
   const [selectedTaskId, setSelectedTaskId] = useState<Id<"tasks"> | null>(null);
+  const [announcement, setAnnouncement] = useState("");
   const tasks = useQuery(api.tasks.listByProject, { projectId });
   const epics = useQuery(api.epics.listByProject, { projectId });
   const moveToColumn = useMutation(api.tasks.moveToColumn);
@@ -111,6 +112,7 @@ export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps)
           destinationIndex: destIndex,
         });
         toast.success(`Task moved to ${TASK_STATUSES[destStatus]}`);
+        setAnnouncement(`Task moved to ${TASK_STATUSES[destStatus]}`);
 
         // Auto-timer: start when entering in_progress
         if (destStatus === "in_progress") {
@@ -138,8 +140,17 @@ export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps)
 
   return (
     <>
+      {/* Screen reader announcements for drag & drop */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
+
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div
+          className="flex gap-4 overflow-x-auto pb-4"
+          role="region"
+          aria-label="Kanban board"
+        >
           {COLUMN_ORDER.map((status) => (
             <KanbanColumn
               key={status}

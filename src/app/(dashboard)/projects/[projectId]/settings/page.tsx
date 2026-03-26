@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/hooks/useToast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -26,6 +27,7 @@ export default function ProjectSettingsPage() {
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
   const [nameError, setNameError] = useState("");
   const [saving, setSaving] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -37,6 +39,7 @@ export default function ProjectSettingsPage() {
     setName(project.name);
     setClientName(project.clientName ?? "");
     setDescription(project.description ?? "");
+    setHourlyRate(project.hourlyRate?.toString() ?? "");
     setInitialized(true);
   }
 
@@ -48,12 +51,14 @@ export default function ProjectSettingsPage() {
     }
     setNameError("");
     setSaving(true);
+    const parsedRate = hourlyRate.trim() ? parseFloat(hourlyRate.trim()) : undefined;
     try {
       await updateProject({
         projectId,
         name: name.trim(),
         clientName: clientName.trim() || undefined,
         description: description.trim() || undefined,
+        hourlyRate: parsedRate,
       });
       toast.success("Project updated.");
     } catch {
@@ -86,11 +91,19 @@ export default function ProjectSettingsPage() {
 
   if (project === undefined) {
     return (
-      <div className="flex flex-col gap-4 max-w-lg animate-pulse">
-        <div className="h-4 w-32 bg-border rounded" />
-        <div className="h-9 bg-border rounded-md" />
-        <div className="h-9 bg-border rounded-md" />
-        <div className="h-20 bg-border rounded-md" />
+      <div className="flex flex-col gap-5 max-w-lg animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 bg-surface rounded-lg" />
+          <div className="space-y-2">
+            <div className="h-5 w-40 bg-surface rounded" />
+            <div className="h-3 w-24 bg-surface rounded" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-10 bg-surface rounded-lg" />
+          <div className="h-10 bg-surface rounded-lg" />
+          <div className="h-24 bg-surface rounded-lg" />
+        </div>
       </div>
     );
   }
@@ -102,22 +115,22 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-lg">
+    <div className="flex flex-col gap-8 max-w-lg">
       <div className="flex items-center gap-3">
         <Link
           href={`/projects/${projectId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
           aria-label="Back to board"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-xl font-semibold text-text-primary">Project Settings</h1>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Project Settings</h1>
           <p className="text-sm text-text-secondary mt-0.5">{project.name}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="flex flex-col gap-4">
+      <form onSubmit={handleSave} className="flex flex-col gap-5">
         <Input
           label="Project name"
           value={name}
@@ -131,6 +144,15 @@ export default function ProjectSettingsPage() {
           onChange={(e) => setClientName(e.target.value)}
           placeholder="e.g. Acme Corp"
         />
+        <Input
+          label="Hourly rate € (optional)"
+          type="number"
+          min="0"
+          step="0.01"
+          value={hourlyRate}
+          onChange={(e) => setHourlyRate(e.target.value)}
+          placeholder="e.g. 85"
+        />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="description" className="text-xs font-medium text-text-primary">
             Description (optional)
@@ -141,7 +163,13 @@ export default function ProjectSettingsPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Short description of the project"
             rows={3}
-            className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-100 resize-none"
+            className={cn(
+              "w-full rounded-lg border border-border/60 bg-white px-3.5 py-2.5 text-sm text-text-primary",
+              "placeholder:text-text-muted",
+              "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+              "hover:border-slate-300",
+              "transition-all duration-150 resize-none"
+            )}
           />
         </div>
         <div className="flex justify-end">
@@ -151,17 +179,22 @@ export default function ProjectSettingsPage() {
         </div>
       </form>
 
-      <hr className="border-border" />
+      <hr className="border-border/40" />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-text-primary">Danger zone</h2>
         {project.status === "active" ? (
-          <div className="flex items-center justify-between rounded-md border border-border p-4">
-            <div>
-              <p className="text-sm font-medium text-text-primary">Archive project</p>
-              <p className="text-xs text-text-secondary mt-0.5">
-                Archiving will hide this project. You can unarchive it later.
-              </p>
+          <div className="flex items-center justify-between rounded-xl border border-error/20 bg-error/5 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-error/10 shrink-0 mt-0.5">
+                <AlertTriangle className="w-4 h-4 text-error" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-primary">Archive project</p>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Archiving will hide this project. You can unarchive it later.
+                </p>
+              </div>
             </div>
             <Button
               variant="destructive"
@@ -172,7 +205,7 @@ export default function ProjectSettingsPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-md border border-border p-4">
+          <div className="flex items-center justify-between rounded-xl border border-border/60 bg-surface/50 p-5">
             <div>
               <p className="text-sm font-medium text-text-primary">Restore project</p>
               <p className="text-xs text-text-secondary mt-0.5">
@@ -193,7 +226,7 @@ export default function ProjectSettingsPage() {
         title="Archive project?"
       >
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-secondary">
+          <p className="text-sm text-text-secondary leading-relaxed">
             Archiving will hide <strong className="text-text-primary">{project.name}</strong> from
             your projects list. You can unarchive it later from project settings.
           </p>

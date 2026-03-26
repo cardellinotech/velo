@@ -5,6 +5,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Zap } from "lucide-react";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -36,20 +37,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-surface px-4">
+    <div className="flex min-h-full items-center justify-center px-4 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10" style={{
+        background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79, 70, 229, 0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 70% 100%, rgba(124, 58, 237, 0.08) 0%, transparent 50%), #FAFBFC",
+      }} />
+      {/* Grid pattern */}
+      <div className="absolute inset-0 -z-10 opacity-[0.35]" style={{
+        backgroundImage: "linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)",
+        backgroundSize: "60px 60px",
+      }} />
+
       <div className="w-full max-w-sm">
-        {/* Logo / Brand */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
+        {/* Logo */}
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/25 mb-5">
+            <Zap className="w-7 h-7 text-white" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-gradient-primary">
             Velo
           </h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            {mode === "signIn" ? "Sign in to your account" : "Create your account"}
+          <p className="mt-2 text-sm text-text-secondary">
+            {mode === "signIn" ? "Welcome back. Sign in to continue." : "Create your account to get started."}
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-lg border border-border bg-white p-6 shadow-card">
+        <div className="rounded-2xl border border-border bg-white/80 backdrop-blur-sm p-7 shadow-elevated">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {mode === "signUp" && (
               <Input
@@ -68,7 +82,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              autoComplete={mode === "signIn" ? "email" : "email"}
+              autoComplete="email"
               required
             />
             <Input
@@ -83,24 +97,24 @@ export default function LoginPage() {
             />
 
             {error && (
-              <p className="text-sm text-error" role="alert">
-                {error}
-              </p>
+              <div className="flex items-center gap-2 rounded-lg bg-error/5 border border-error/10 px-3 py-2">
+                <p className="text-sm text-error" role="alert">{error}</p>
+              </div>
             )}
 
-            <Button type="submit" loading={loading} className="w-full mt-1">
+            <Button type="submit" loading={loading} className="w-full mt-2 h-11">
               {mode === "signIn" ? "Sign in" : "Create account"}
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-text-secondary">
+          <div className="mt-5 text-center text-sm text-text-secondary">
             {mode === "signIn" ? (
               <>
-                No account?{" "}
+                Don&apos;t have an account?{" "}
                 <button
                   type="button"
                   onClick={() => { setMode("signUp"); setError(null); }}
-                  className="font-medium text-primary hover:text-primary-hover transition-colors"
+                  className="font-semibold text-primary hover:text-primary-hover transition-colors"
                 >
                   Sign up
                 </button>
@@ -111,7 +125,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setMode("signIn"); setError(null); }}
-                  className="font-medium text-primary hover:text-primary-hover transition-colors"
+                  className="font-semibold text-primary hover:text-primary-hover transition-colors"
                 >
                   Sign in
                 </button>
@@ -119,6 +133,10 @@ export default function LoginPage() {
             )}
           </div>
         </div>
+
+        <p className="mt-6 text-center text-xs text-text-muted">
+          Track work. Track time. Get paid.
+        </p>
       </div>
     </div>
   );

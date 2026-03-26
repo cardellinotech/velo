@@ -8,37 +8,44 @@ import { type Toast, subscribeToToasts, removeToast } from "@/hooks/useToast";
 const typeConfig = {
   success: {
     icon: CheckCircle,
-    borderColor: "border-l-success",
-    iconColor: "text-success",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-l-emerald-500",
+    iconColor: "text-emerald-600",
+    textColor: "text-emerald-900",
   },
   error: {
     icon: XCircle,
-    borderColor: "border-l-error",
-    iconColor: "text-error",
+    bgColor: "bg-red-50",
+    borderColor: "border-l-red-500",
+    iconColor: "text-red-600",
+    textColor: "text-red-900",
   },
   info: {
     icon: Info,
+    bgColor: "bg-slate-50",
     borderColor: "border-l-primary",
     iconColor: "text-primary",
+    textColor: "text-text-primary",
   },
 };
 
 function ToastItem({ toast }: { toast: Toast }) {
-  const { icon: Icon, borderColor, iconColor } = typeConfig[toast.type];
+  const { icon: Icon, bgColor, borderColor, iconColor, textColor } = typeConfig[toast.type];
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-md border border-border bg-white shadow-card-hover px-4 py-3",
+        "flex items-start gap-3 rounded-lg shadow-elevated px-4 py-3 animate-slide-in",
         "border-l-4 min-w-72 max-w-sm",
+        bgColor,
         borderColor
       )}
       role="alert"
     >
       <Icon className={cn("w-4 h-4 mt-0.5 shrink-0", iconColor)} />
-      <p className="flex-1 text-sm text-text-primary">{toast.message}</p>
+      <p className={cn("flex-1 text-sm", textColor)}>{toast.message}</p>
       <button
         onClick={() => removeToast(toast.id)}
-        className="shrink-0 text-text-secondary hover:text-text-primary transition-colors"
+        className="shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
         aria-label="Dismiss"
       >
         <X className="w-4 h-4" />

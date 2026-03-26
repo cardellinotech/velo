@@ -18,6 +18,7 @@ interface ProjectFormProps {
     name: string;
     clientName?: string;
     description?: string;
+    hourlyRate?: number;
   };
 }
 
@@ -29,6 +30,7 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
   const [name, setName] = useState(project?.name ?? "");
   const [clientName, setClientName] = useState(project?.clientName ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
+  const [hourlyRate, setHourlyRate] = useState(project?.hourlyRate?.toString() ?? "");
   const [nameError, setNameError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +38,7 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
     setName(project?.name ?? "");
     setClientName(project?.clientName ?? "");
     setDescription(project?.description ?? "");
+    setHourlyRate(project?.hourlyRate?.toString() ?? "");
     setNameError("");
     onClose();
   }
@@ -48,6 +51,7 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
     }
     setNameError("");
     setLoading(true);
+    const parsedRate = hourlyRate.trim() ? parseFloat(hourlyRate.trim()) : undefined;
     try {
       if (project) {
         await updateProject({
@@ -55,6 +59,7 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
           name: name.trim(),
           clientName: clientName.trim() || undefined,
           description: description.trim() || undefined,
+          hourlyRate: parsedRate,
         });
         toast.success("Project updated.");
       } else {
@@ -62,11 +67,13 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
           name: name.trim(),
           clientName: clientName.trim() || undefined,
           description: description.trim() || undefined,
+          hourlyRate: parsedRate,
         });
         toast.success("Project created.");
         setName("");
         setClientName("");
         setDescription("");
+        setHourlyRate("");
       }
       onClose();
     } catch {
@@ -96,6 +103,15 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="e.g. Acme Corp"
+        />
+        <Input
+          label="Hourly rate € (optional)"
+          type="number"
+          min="0"
+          step="0.01"
+          value={hourlyRate}
+          onChange={(e) => setHourlyRate(e.target.value)}
+          placeholder="e.g. 85"
         />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="description" className="text-xs font-medium text-text-primary">

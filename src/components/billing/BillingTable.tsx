@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDurationShort } from "@/lib/formatTime";
-import { TASK_TYPES, type TaskType } from "@/lib/constants";
+import { type TaskType } from "@/lib/constants";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 import type { BillingEntry } from "../../../convex/billing";
 
@@ -25,24 +25,29 @@ type ProjectRow = {
   projectId: string;
   projectName: string;
   clientName: string | null;
+  hourlyRate: number | null;
   durationMs: number;
   epics: EpicRow[];
 };
 
+function formatAmount(amount: number): string {
+  return `€${amount.toFixed(2)}`;
+}
+
 function groupEntries(entries: BillingEntry[]): ProjectRow[] {
-  const projectMap = new Map<string, { name: string; clientName: string | null; entries: BillingEntry[] }>();
+  const projectMap = new Map<string, { name: string; clientName: string | null; hourlyRate: number | null; entries: BillingEntry[] }>();
 
   for (const entry of entries) {
     const key = entry.projectId;
     if (!projectMap.has(key)) {
-      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, entries: [] });
+      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, hourlyRate: entry.hourlyRate, entries: [] });
     }
     projectMap.get(key)!.entries.push(entry);
   }
 
   const projects: ProjectRow[] = [];
 
-  for (const [projectId, { name, clientName, entries: projectEntries }] of projectMap) {
+  for (const [projectId, { name, clientName, hourlyRate, entries: projectEntries }] of projectMap) {
     const epicMap = new Map<string, { name: string; epicId: string | null; entries: BillingEntry[] }>();
 
     for (const entry of projectEntries) {
@@ -84,6 +89,7 @@ function groupEntries(entries: BillingEntry[]): ProjectRow[] {
       projectId,
       projectName: name,
       clientName,
+      hourlyRate,
       durationMs: projectEntries.reduce((s, e) => s + e.durationMs, 0),
       epics,
     });
@@ -103,14 +109,17 @@ export function BillingTable({ entries }: BillingTableProps) {
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-text-secondary">
-        <Clock className="w-10 h-10 opacity-30" />
-        <p className="text-sm">No time entries for this period.</p>
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+          <Clock className="w-6 h-6 text-slate-300" />
+        </div>
+        <p className="text-sm text-text-muted">No time entries for this period.</p>
       </div>
     );
   }
 
   const projects = groupEntries(entries);
+  const hasAnyRate = projects.some((p) => p.hourlyRate !== null);
 
   function toggleProject(projectId: string) {
     setExpandedProjects((prev) => {
@@ -131,61 +140,85 @@ export function BillingTable({ entries }: BillingTableProps) {
   }
 
   return (
-    <div className="rounded-md border border-border overflow-hidden">
+    <div className="rounded-xl border border-border/60 overflow-hidden bg-white shadow-card">
       {/* Header */}
-      <div className="flex items-center px-4 py-2 bg-surface border-b border-border text-xs font-medium text-text-secondary">
+      <div className="flex items-center px-5 py-3 bg-slate-50/80 border-b border-border/40 text-[11px] font-semibold text-text-muted uppercase tracking-wide">
         <span className="flex-1">Project / Epic / Type</span>
         <span className="w-24 text-right">Hours</span>
+        {hasAnyRate && <span className="w-32 text-right">Amount</span>}
       </div>
 
-      {projects.map((project) => {
+      {projects.map((project, projectIndex) => {
         const isProjectExpanded = expandedProjects.has(project.projectId);
+        const projectHours = project.durationMs / 3_600_000;
+        const projectAmount = project.hourlyRate ? projectHours * project.hourlyRate : null;
         return (
           <div key={project.projectId}>
             {/* Project row */}
             <button
               onClick={() => toggleProject(project.projectId)}
-              className="w-full flex items-center gap-2 px-4 py-3 bg-white hover:bg-surface transition-colors border-b border-border/50 text-left"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-5 py-3.5 bg-white hover:bg-surface/70 transition-colors duration-100 text-left",
+                projectIndex < projects.length - 1 || isProjectExpanded
+                  ? "border-b border-border/40"
+                  : ""
+              )}
             >
               <ChevronRight
-                className={cn("w-4 h-4 text-text-secondary shrink-0 transition-transform duration-150", isProjectExpanded && "rotate-90")}
+                className={cn("w-4 h-4 text-text-muted shrink-0 transition-transform duration-200", isProjectExpanded && "rotate-90")}
               />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-text-primary">{project.projectName}</span>
+              <div className="flex-1 min-w-0 flex items-center gap-2.5">
+                <span className="text-sm font-semibold text-text-primary">{project.projectName}</span>
                 {project.clientName && (
-                  <span className="ml-2 text-xs text-text-secondary">{project.clientName}</span>
+                  <span className="text-[11px] text-text-secondary bg-surface px-2 py-0.5 rounded-md border border-border/50">
+                    {project.clientName}
+                  </span>
+                )}
+                {project.hourlyRate && (
+                  <span className="text-[11px] text-emerald-600 font-medium">€{project.hourlyRate}/h</span>
                 )}
               </div>
-              <span className="w-24 text-right text-sm font-medium text-text-primary shrink-0">
+              <span className="w-24 text-right text-sm font-semibold text-text-primary tabular-nums shrink-0">
                 {formatDurationShort(project.durationMs)}
               </span>
+              {hasAnyRate && (
+                <span className="w-32 text-right text-sm font-bold shrink-0 text-emerald-600 tabular-nums">
+                  {projectAmount !== null ? formatAmount(projectAmount) : "–"}
+                </span>
+              )}
             </button>
 
             {/* Epic rows */}
             {isProjectExpanded &&
-              project.epics.map((epic) => {
+              project.epics.map((epic, epicIndex) => {
                 const epicKey = `${project.projectId}:${epic.epicId ?? "none"}`;
                 const isEpicExpanded = expandedEpics.has(epicKey);
                 return (
                   <div key={epicKey}>
                     <button
                       onClick={() => toggleEpic(epicKey)}
-                      className="w-full flex items-center gap-2 pl-8 pr-4 py-2.5 bg-surface/50 hover:bg-surface transition-colors border-b border-border/30 text-left"
+                      className={cn(
+                        "w-full flex items-center gap-2 pl-10 pr-5 py-3 bg-slate-50/50 hover:bg-slate-50 transition-colors duration-100 text-left",
+                        epicIndex < project.epics.length - 1 || isEpicExpanded
+                          ? "border-b border-border/30"
+                          : "border-b border-border/40"
+                      )}
                     >
                       <ChevronRight
-                        className={cn("w-3.5 h-3.5 text-text-secondary shrink-0 transition-transform duration-150", isEpicExpanded && "rotate-90")}
+                        className={cn("w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-200", isEpicExpanded && "rotate-90")}
                       />
                       <span
                         className={cn(
-                          "flex-1 text-sm truncate",
-                          epic.epicId ? "text-text-primary" : "text-text-secondary italic"
+                          "flex-1 text-[13px] truncate",
+                          epic.epicId ? "text-text-primary font-medium" : "text-text-muted italic"
                         )}
                       >
                         {epic.epicName}
                       </span>
-                      <span className="w-24 text-right text-sm text-text-primary shrink-0">
+                      <span className="w-24 text-right text-[13px] text-text-secondary tabular-nums shrink-0">
                         {formatDurationShort(epic.durationMs)}
                       </span>
+                      {hasAnyRate && <span className="w-32 shrink-0" />}
                     </button>
 
                     {/* Task type rows */}
@@ -193,15 +226,16 @@ export function BillingTable({ entries }: BillingTableProps) {
                       epic.taskTypes.map((typeRow) => (
                         <div
                           key={typeRow.taskType}
-                          className="flex items-center gap-2 pl-14 pr-4 py-2 bg-surface border-b border-border/20"
+                          className="flex items-center gap-2.5 pl-16 pr-5 py-2.5 bg-slate-50/30 border-b border-border/20"
                         >
                           <TaskTypeBadge taskType={typeRow.taskType} />
-                          <span className="flex-1 text-xs text-text-secondary">
+                          <span className="flex-1 text-xs text-text-muted">
                             {typeRow.taskCount} {typeRow.taskCount === 1 ? "task" : "tasks"}
                           </span>
-                          <span className="w-24 text-right text-sm text-text-secondary shrink-0">
+                          <span className="w-24 text-right text-xs text-text-secondary tabular-nums shrink-0">
                             {formatDurationShort(typeRow.durationMs)}
                           </span>
+                          {hasAnyRate && <span className="w-32 shrink-0" />}
                         </div>
                       ))}
                   </div>
