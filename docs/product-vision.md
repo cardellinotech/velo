@@ -60,6 +60,7 @@ Dominic is a DevOps freelancer who works across multiple client projects and per
 3. **When** it's the end of the month, **I want to** generate a billing summary and professional invoice per client, **so that** I can bill accurately and get paid without manual calculation or a separate invoicing tool.
 4. **When** I switch between client projects, **I want to** quickly change context, **so that** time is tracked against the correct project.
 5. **When** I work on a personal project like Aura, **I want to** use the same tool without billing overhead, **so that** all my work lives in one place.
+6. **When** I have routine tasks that repeat every week or month (maintenance windows, client check-ins, report generation), **I want** them to automatically appear on my board, **so that** I never forget recurring obligations.
 
 ### Pain Points (Ranked)
 
@@ -182,6 +183,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 - Multi-currency support (EUR, USD, CHF, GBP)
 - Invoice generation with PDF export
 - Business settings for invoice details
+- Recurring tasks (daily/weekly/monthly) with automatic creation
 
 **Could Have:**
 - Task filtering and search
@@ -216,6 +218,9 @@ Billing view → "Create Invoice" → Select project → Review pre-populated li
 
 **Flow 6: Set Up Business Details**
 Navigation → "Settings" → Fill in business name, address, VAT ID → Set default currency → Add bank details → Set tax rate → Configure invoice prefix → Save
+
+**Flow 7: Set Up Recurring Task**
+Project settings or Kanban → "New Recurring Task" → Enter title, type, priority → Select recurrence (daily/weekly/monthly) → Choose day (if weekly/monthly) → Assign to epic (optional) → Save → Task instances appear automatically on the board at scheduled times
 
 ### Success Metrics
 

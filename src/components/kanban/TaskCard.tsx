@@ -9,6 +9,7 @@ import { TimerDisplay } from "@/components/timer/TimerDisplay";
 import { useTimer } from "@/hooks/useTimer";
 import { PRIORITIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { Repeat } from "lucide-react";
 
 interface TaskCardProps {
   task: Doc<"tasks">;
@@ -81,6 +82,12 @@ export const TaskCard = memo(function TaskCard({ task, index, epicName, epicColo
                     />
                   )}
                   <span className="truncate max-w-[80px]">{epicName}</span>
+                </span>
+              )}
+
+              {task.recurringTemplateId && (
+                <span title="Created from recurring template">
+                  <Repeat className="w-3 h-3 text-slate-400" aria-hidden="true" />
                 </span>
               )}
 

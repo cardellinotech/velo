@@ -116,7 +116,19 @@ export const archive = mutation({
     if (!userId) throw new Error("Not authenticated");
     const project = await ctx.db.get(args.projectId);
     if (!project || project.userId !== userId) throw new Error("Not found");
-    await ctx.db.patch(args.projectId, { status: "archived", updatedAt: Date.now() });
+    const now = Date.now();
+    await ctx.db.patch(args.projectId, { status: "archived", updatedAt: now });
+
+    // Pause all active recurring templates for this project
+    const templates = await ctx.db
+      .query("recurringTaskTemplates")
+      .withIndex("by_projectId", (q) => q.eq("projectId", args.projectId))
+      .take(500);
+    for (const template of templates) {
+      if (template.isActive) {
+        await ctx.db.patch(template._id, { isActive: false, updatedAt: now });
+      }
+    }
   },
 });
 

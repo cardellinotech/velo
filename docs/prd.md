@@ -231,6 +231,7 @@ Managed by Convex Auth. Stores authenticated user data.
 | status | "todo" \| "in_progress" \| "in_review" \| "done" | Kanban column |
 | priority | "low" \| "medium" \| "high" \| "urgent" | Priority level |
 | order | number | Sort order within column |
+| recurringTemplateId | Id<"recurringTaskTemplates">? | If created by a recurring template, links back to it |
 | createdAt | number | Timestamp |
 | updatedAt | number | Timestamp |
 
@@ -299,6 +300,29 @@ Managed by Convex Auth. Stores authenticated user data.
 | createdAt | number | Timestamp |
 | updatedAt | number | Timestamp |
 
+#### recurringTaskTemplates
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"recurringTaskTemplates"> | Auto-generated |
+| projectId | Id<"projects"> | Target project for created tasks |
+| epicId | Id<"epics">? | Optional epic assignment for created tasks |
+| userId | Id<"users"> | Owner |
+| title | string | Task title (used as-is for each instance) |
+| description | string? | Task description (copied to each instance) |
+| taskType | "story" \| "task" \| "bug" \| "incident" | Task type for created instances |
+| priority | "low" \| "medium" \| "high" \| "urgent" | Priority for created instances |
+| recurrence | "daily" \| "weekly" \| "monthly" | Recurrence interval |
+| dayOfWeek | number? | Day of week (0=Sun..6=Sat) — required for weekly |
+| dayOfMonth | number? | Day of month (1-28) — required for monthly. Capped at 28 to avoid month-length issues. |
+| nextDueDate | number | Timestamp of the next scheduled creation |
+| lastCreatedAt | number? | Timestamp when last instance was created |
+| isActive | boolean | Whether this template is currently active |
+| createdAt | number | Timestamp |
+| updatedAt | number | Timestamp |
+
+Each instance created by a template is a normal `tasks` row with an added `recurringTemplateId` field linking back to its template.
+
 ### Relationships
 
 ```mermaid
@@ -308,10 +332,12 @@ erDiagram
     projects ||--o{ epics : contains
     projects ||--o{ tasks : contains
     projects ||--o{ invoices : "billed via"
+    projects ||--o{ recurringTaskTemplates : "has templates"
     epics ||--o{ tasks : "optionally groups"
     tasks ||--o{ timeEntries : tracks
     users ||--o{ timeEntries : creates
     users ||--o{ invoices : creates
+    recurringTaskTemplates ||--o{ tasks : "generates"
 ```
 
 ### Indexes
@@ -343,6 +369,20 @@ invoices: defineTable({...})
   .index("by_userId", ["userId"])
   .index("by_projectId", ["projectId"])
   .index("by_userId_status", ["userId", "status"]),
+
+recurringTaskTemplates: defineTable({...})
+  .index("by_userId", ["userId"])
+  .index("by_projectId", ["projectId"])
+  .index("by_userId_isActive", ["userId", "isActive"])
+  .index("by_nextDueDate", ["nextDueDate"]),
+
+// Updated tasks table — added recurringTemplateId
+tasks: defineTable({...})
+  .index("by_projectId", ["projectId"])
+  .index("by_projectId_status", ["projectId", "status"])
+  .index("by_epicId", ["epicId"])
+  .index("by_userId_updatedAt", ["userId", "updatedAt"])
+  .index("by_recurringTemplateId", ["recurringTemplateId"]),
 ```
 
 ---
@@ -398,6 +438,12 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | `invoices.list` | { status?, projectId? } | Invoice[] for current user | Required |
 | `invoices.get` | { invoiceId } | Single invoice with all details | Required, must be owner |
 
+#### Recurring Task Templates
+| Query | Args | Returns | Auth |
+|-------|------|---------|------|
+| `recurringTasks.list` | { projectId? } | RecurringTaskTemplate[] for current user | Required |
+| `recurringTasks.get` | { templateId } | Single template with details | Required, must be owner |
+
 ### Mutations (Writes)
 
 #### Projects
@@ -444,6 +490,15 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | `invoices.update` | { invoiceId, clientAddress?, notes?, lineItems?, taxRate?, dueDate? } | Update draft invoice |
 | `invoices.updateStatus` | { invoiceId, status } | Mark invoice as sent/paid/overdue |
 | `invoices.delete` | { invoiceId } | Delete draft invoice (only drafts can be deleted) |
+
+#### Recurring Task Templates
+| Mutation | Args | Effect |
+|----------|------|--------|
+| `recurringTasks.create` | { projectId, epicId?, title, description?, taskType, priority, recurrence, dayOfWeek?, dayOfMonth? } | Create recurring template, compute nextDueDate |
+| `recurringTasks.update` | { templateId, title?, description?, taskType?, priority?, epicId?, recurrence?, dayOfWeek?, dayOfMonth? } | Update template, recompute nextDueDate if schedule changed |
+| `recurringTasks.toggleActive` | { templateId } | Pause or resume template. On resume: recalculate nextDueDate from now. |
+| `recurringTasks.delete` | { templateId } | Delete template. Existing task instances remain. |
+| `recurringTasks.createInstance` | { templateId } | Internal — creates a task instance from template. Called by cron job. Advances nextDueDate. |
 
 ---
 
@@ -497,7 +552,11 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 - **As a** freelancer, **I want to** store my business details (name, address, VAT ID, bank details), **so that** they are automatically filled into invoices.
 - **Acceptance criteria:** Settings page for business info. Auto-populated on new invoices. Editable per invoice if needed.
 
-### US-013: Authentication
+### US-013: Recurring Tasks
+- **As a** freelancer, **I want to** define tasks that automatically repeat on a schedule (daily, weekly, monthly), **so that** routine work like maintenance, reviews, or client check-ins is always on my board without manual recreation.
+- **Acceptance criteria:** Can create a recurring task template with title, type, priority, recurrence interval, and target project/epic. Task instances are automatically created as normal tasks on the board at the scheduled time. Each instance has its own independent time tracking. Can pause, edit, or delete recurring templates. Can see which tasks were created from a template.
+
+### US-014: Authentication
 - **As a** user, **I want to** securely log in, **so that** my data is protected.
 - **Acceptance criteria:** Can sign up and log in via Convex Auth. Unauthenticated users are redirected to login. All data is scoped to the authenticated user.
 
@@ -528,6 +587,9 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | FR-017 | Invoice management | P1 | Track invoice lifecycle | Invoice statuses: draft, sent, paid, overdue. Invoice list view with filters. Edit draft invoices. Mark as sent/paid. Auto-increment invoice numbers. |
 | FR-018 | Business settings | P1 | Store freelancer business details | Settings page: business name, address, VAT ID, tax rate, bank details (name, IBAN, BIC), payment terms, invoice number prefix. Used as defaults when creating invoices. |
 | FR-019 | Invoice PDF export | P1 | Export invoices as professional PDFs | Clean, professional PDF layout. Includes all invoice details, line items table, payment instructions. Proper formatting with sender/recipient blocks, totals section. |
+| FR-020 | Recurring task templates | P1 | Define tasks that auto-repeat on a schedule | Create template with title, type, priority, project, optional epic, recurrence (daily/weekly/monthly). System auto-creates task instances. Each instance is a normal task with own time tracking. |
+| FR-021 | Recurring task scheduler | P1 | Automatic creation of task instances | Convex cron job checks for due templates and creates task instances. Advances nextDueDate after creation. Handles paused/deleted templates gracefully. |
+| FR-022 | Recurring task management UI | P1 | View and manage recurring task templates | Recurring templates list in project settings or dedicated page. Create/edit/pause/delete templates. Visual indicator on tasks created from templates (e.g. repeat icon). |
 
 ---
 
@@ -783,6 +845,19 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 | Tax rate 0% | Valid — shows "0%" tax line with €0.00 amount. Total equals subtotal. |
 | No tax rate set | Don't show tax line at all. Total equals subtotal. |
 
+### Recurring Task Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| Template for archived project | Pause the template automatically. Show notice: "Template paused — project was archived." Resume if project is un-archived. |
+| Template with deleted epic | Create task without epic assignment. Show warning on template: "Linked epic no longer exists." |
+| Multiple instances pile up (not completed) | Still create the next instance. Recurring tasks don't depend on previous completion. User can see multiple open instances. |
+| Template created mid-period | First instance created at the next occurrence (e.g., if monthly on the 1st and template created on the 15th, first instance on the 1st of next month). |
+| dayOfMonth = 29/30/31 | Cap at 28 to avoid month-length issues. UI enforces max 28. |
+| Pause and resume template | Pausing stops new instances. Resuming recalculates nextDueDate from today. Doesn't create missed instances. |
+| Delete template | Template deleted. Already-created task instances remain (they're normal tasks). Tasks keep the recurringTemplateId but template query returns null — show "(deleted template)" indicator. |
+| Cron job runs while Convex is deploying | Convex cron jobs are reliable and run after deployment completes. No special handling needed. |
+
 ### General Error Handling
 
 | Error | UI Response |
@@ -837,7 +912,7 @@ The following are explicitly NOT included in this PRD and should not be built in
 - Mobile app or PWA
 - Third-party integrations (GitHub, Slack, calendar, etc.)
 - Custom workflows or configurable board columns
-- Recurring tasks or templates
+- ~~Recurring tasks or templates~~ **MOVED TO SCOPE** (Phase 8)
 - File attachments on tasks
 - Comments or activity feed on tasks
 - Dark mode

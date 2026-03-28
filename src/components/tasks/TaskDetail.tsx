@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Clock, Trash2, User } from "lucide-react";
+import { ArrowLeft, ChevronDown, Clock, Trash2, User, Repeat } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +39,11 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
 
   const timeEntries = useQuery(api.timeEntries.listByTask, { taskId: task._id });
   const removeEntry = useMutation(api.timeEntries.remove);
+
+  const recurringTemplate = useQuery(
+    api.recurringTasks.get,
+    task.recurringTemplateId ? { templateId: task.recurringTemplateId } : "skip"
+  );
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -135,6 +140,18 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
             className="text-2xl font-semibold text-text-primary bg-transparent border-0 border-b-2 border-transparent hover:border-border focus:border-primary focus:outline-none transition-colors w-full py-1"
             aria-label="Task title"
           />
+
+          {/* Recurring template indicator */}
+          {task.recurringTemplateId && (
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+              <Repeat className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              {recurringTemplate === undefined ? null : recurringTemplate === null ? (
+                <span>↻ Created from recurring template <span className="italic">(deleted template)</span></span>
+              ) : (
+                <span>↻ Created from recurring template</span>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           <div>

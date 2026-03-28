@@ -56,13 +56,51 @@ export default defineSchema({
       v.literal("urgent")
     ),
     order: v.number(),
+    recurringTemplateId: v.optional(v.id("recurringTaskTemplates")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_projectId", ["projectId"])
     .index("by_projectId_status", ["projectId", "status"])
     .index("by_epicId", ["epicId"])
-    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+    .index("by_userId_updatedAt", ["userId", "updatedAt"])
+    .index("by_recurringTemplateId", ["recurringTemplateId"]),
+
+  recurringTaskTemplates: defineTable({
+    projectId: v.id("projects"),
+    epicId: v.optional(v.id("epics")),
+    userId: v.id("users"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    taskType: v.union(
+      v.literal("story"),
+      v.literal("task"),
+      v.literal("bug"),
+      v.literal("incident")
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("urgent")
+    ),
+    recurrence: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly")
+    ),
+    dayOfWeek: v.optional(v.number()),
+    dayOfMonth: v.optional(v.number()),
+    nextDueDate: v.number(),
+    lastCreatedAt: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_projectId", ["projectId"])
+    .index("by_userId_isActive", ["userId", "isActive"])
+    .index("by_nextDueDate", ["nextDueDate"]),
 
   timeEntries: defineTable({
     taskId: v.id("tasks"),

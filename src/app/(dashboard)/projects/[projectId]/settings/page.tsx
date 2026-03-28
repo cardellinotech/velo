@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/hooks/useToast";
 import { SUPPORTED_CURRENCIES, getCurrencySymbol } from "@/lib/currency";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Repeat } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { RecurringTaskList } from "@/components/recurring/RecurringTaskList";
+import { RecurringTaskForm } from "@/components/recurring/RecurringTaskForm";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -35,6 +37,9 @@ export default function ProjectSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [recurringFormOpen, setRecurringFormOpen] = useState(false);
+
+  const recurringTemplates = useQuery(api.recurringTasks.list, { projectId });
 
   // Initialize form when project loads
   const [initialized, setInitialized] = useState(false);
@@ -221,6 +226,31 @@ export default function ProjectSettingsPage() {
           </Button>
         </div>
       </form>
+
+      <hr className="border-border/40" />
+
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Repeat className="w-4 h-4 text-text-secondary" />
+            <h2 className="text-sm font-semibold text-text-primary">Recurring Tasks</h2>
+            {recurringTemplates !== undefined && recurringTemplates.length > 0 && (
+              <span className="text-xs font-medium text-text-secondary bg-surface border border-border/50 rounded-full px-2 py-0.5">
+                {recurringTemplates.length}
+              </span>
+            )}
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => setRecurringFormOpen(true)}>
+            New recurring task
+          </Button>
+        </div>
+        <RecurringTaskList projectId={projectId} />
+        <RecurringTaskForm
+          open={recurringFormOpen}
+          onClose={() => setRecurringFormOpen(false)}
+          projectId={projectId}
+        />
+      </div>
 
       <hr className="border-border/40" />
 

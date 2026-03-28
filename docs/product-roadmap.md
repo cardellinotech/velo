@@ -414,6 +414,56 @@
 
 ---
 
+## Phase 8: Recurring Tasks
+
+**Goal:** Add recurring task templates with flexible intervals (daily, weekly, monthly). Tasks are automatically created as normal task instances on the Kanban board via a Convex cron job. Each instance has independent time tracking. At the end of this phase, routine work like monthly maintenance, weekly check-ins, or daily standups automatically appears on the board.
+
+**Reference sections:** PRD §3 (Data Model — recurringTaskTemplates, updated tasks table), PRD §4 (API — recurringTasks queries/mutations), PRD §6 (FR-020, FR-021, FR-022), PRD §12 (Recurring Task Edge Cases)
+
+**Agent prompt:** "Add recurring task support to Velo. (1) Add `recurringTaskTemplates` table to Convex schema with fields: projectId, epicId (optional), title, description, taskType, priority, recurrence (daily/weekly/monthly), dayOfWeek, dayOfMonth, nextDueDate, lastCreatedAt, isActive. Add `recurringTemplateId` optional field to the existing tasks table. (2) Implement CRUD mutations for recurring templates. (3) Implement a Convex cron job that runs daily, checks for templates where nextDueDate <= now, creates task instances, and advances nextDueDate. (4) Build the recurring task template management UI — accessible from project settings or a dedicated section. Create/edit/pause/delete templates. (5) Add a visual indicator (repeat icon) on task cards created from a recurring template. (6) Handle edge cases: archived projects pause templates, deleted epics clear epicId, pausing/resuming recalculates nextDueDate. Read convex/_generated/ai/guidelines.md and PRD §12 Recurring Task Edge Cases carefully."
+
+- [x] **TASK-082** — Add recurringTaskTemplates table and update tasks schema
+  Files: `convex/schema.ts`
+  Notes: Add `recurringTaskTemplates` table with all fields from PRD. Add `recurringTemplateId: v.optional(v.id("recurringTaskTemplates"))` to tasks table. Add indexes: `by_userId`, `by_projectId`, `by_userId_isActive`, `by_nextDueDate` on templates. Add `by_recurringTemplateId` index on tasks.
+
+- [x] **TASK-083** — Implement recurring task template CRUD mutations
+  Files: `convex/recurringTasks.ts`
+  Notes: Queries: `list` (by user, optional project filter), `get` (single template). Mutations: `create` (compute initial nextDueDate based on recurrence + today), `update` (recompute nextDueDate if schedule changed), `toggleActive` (pause/resume, recalculate nextDueDate on resume from today), `delete`. All auth-gated. On `create`: for daily → tomorrow, for weekly → next occurrence of dayOfWeek, for monthly → next occurrence of dayOfMonth.
+
+- [x] **TASK-084** — Implement nextDueDate calculation utility
+  Files: `convex/recurringTasks.ts` (or `convex/lib/recurrence.ts`)
+  Notes: Helper function `computeNextDueDate(recurrence, dayOfWeek?, dayOfMonth?, fromDate?)` that returns the next timestamp. For daily: next day at 00:00. For weekly: next dayOfWeek (0=Sun..6=Sat) at 00:00. For monthly: next dayOfMonth (1-28, capped) at 00:00. If dayOfMonth is past in current month, go to next month. Used by both create/update mutations and the cron job.
+
+- [x] **TASK-085** — Implement Convex cron job for automatic task creation
+  Files: `convex/crons.ts`, `convex/recurringTasks.ts`
+  Notes: Register a Convex cron job that runs daily (e.g. `crons.daily("createRecurringTasks", ...)`). The job queries all active templates where `nextDueDate <= Date.now()`. For each: create a new task with the template's fields (title, description, taskType, priority, projectId, epicId, recurringTemplateId), set status to "todo", compute order. Then advance `nextDueDate` and update `lastCreatedAt`. Handle edge case: if project is archived, skip and pause the template.
+
+- [x] **TASK-086** — Build RecurringTaskForm dialog
+  Files: `src/components/recurring/RecurringTaskForm.tsx`
+  Notes: Dialog form: title (required), task type dropdown, priority dropdown, project dropdown (required), epic dropdown (optional, filtered by project), recurrence selector (daily/weekly/monthly radio buttons or segmented control). Conditional fields: if weekly → day of week picker (Mon-Sun), if monthly → day of month input (1-28). Preview text showing next occurrence: "Next task will be created on [date]". Used for both create and edit.
+
+- [x] **TASK-087** — Build RecurringTaskList component
+  Files: `src/components/recurring/RecurringTaskList.tsx`
+  Notes: List of recurring templates for a project. Each row shows: title, recurrence badge (e.g. "Monthly on the 1st", "Weekly on Monday", "Daily"), next due date, task type badge, active/paused toggle. Edit and delete buttons. Empty state: "No recurring tasks set up. Create one to automate routine work."
+
+- [x] **TASK-088** — Add Recurring Tasks section to project settings
+  Files: `src/app/(dashboard)/projects/[projectId]/settings/page.tsx`
+  Notes: Add new section "Recurring Tasks" below the existing project settings. Shows RecurringTaskList for this project. "New Recurring Task" button opens RecurringTaskForm with projectId pre-filled. Section header with Repeat icon and task count badge.
+
+- [x] **TASK-089** — Add recurring indicator to TaskCard and TaskDetail
+  Files: `src/components/kanban/TaskCard.tsx`, `src/components/tasks/TaskDetail.tsx`
+  Notes: If a task has `recurringTemplateId`, show a small Repeat icon (from Lucide) on the task card, next to the epic tag. On task detail: show "Created from recurring template: [template title]" info line with link to project settings. If template was deleted, show "(template deleted)".
+
+- [x] **TASK-090** — Handle edge cases and auto-pause on archive
+  Files: `convex/projects.ts`, `convex/recurringTasks.ts`, `convex/epics.ts`
+  Notes: When a project is archived (`projects.archive`): find all active recurring templates for that project and set `isActive: false`. When an epic is deleted: find all templates referencing it and clear their `epicId`. When project is un-archived: do NOT auto-resume templates (user should manually resume to avoid surprise task creation). Add appropriate error handling for all edge cases from PRD §12.
+
+- [x] **TASK-091** — Final integration test and polish
+  Files: All new files
+  Notes: End-to-end test: create a monthly recurring template on the 1st → verify nextDueDate is correct → manually trigger cron job or wait → verify task instance appears on Kanban board → verify task has recurringTemplateId and repeat icon → verify time tracking works independently → pause template → verify no new instances → resume → verify nextDueDate recalculated → archive project → verify template auto-paused. Visual polish: recurring badge styling, form layout, consistency with existing design system.
+
+---
+
 ## Agent Session Guide
 
 ### How to Structure Coding Sessions
@@ -437,8 +487,9 @@ Each phase is designed to be completed in 1–3 coding sessions. Here's how to a
 - **Phase 5:** 1–2 sessions (polish and testing)
 - **Phase 6:** 3–4 sessions (full visual redesign + hourly rate feature)
 - **Phase 7:** 4–6 sessions (multi-currency + invoice generation + PDF export + business settings)
+- **Phase 8:** 2–3 sessions (recurring task templates + cron job + management UI)
 
-**Total estimated sessions: 15–24**
+**Total estimated sessions: 17–27**
 
 ### When You Hit a Problem
 
