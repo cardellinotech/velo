@@ -28,7 +28,8 @@
       "Multi-Currency Support (EUR, USD, CHF, GBP) mit globalem Standard und Projekt-Override",
       "Rechnungserstellung aus getrackten Stunden mit PDF-Export",
       "Geschäftsdaten-Verwaltung (Firmenname, Adresse, USt-ID, Bankverbindung)",
-      "Rechnungs-Lifecycle: Entwurf → Versendet → Bezahlt → Überfällig"
+      "Rechnungs-Lifecycle: Entwurf → Versendet → Bezahlt → Überfällig",
+      "Recurring Tasks: Wiederkehrende Aufgaben mit flexiblen Intervallen (täglich/wöchentlich/monatlich), automatische Erstellung als eigenständige Task-Instanzen"
     ],
     "platform": "Web-App (Next.js)",
     "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",
