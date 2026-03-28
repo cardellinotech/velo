@@ -464,6 +464,60 @@
 
 ---
 
+## Phase 9: Mobile Optimization
+
+**Goal:** Make every page and feature in Velo fully usable on mobile browsers. Responsive layout with collapsible sidebar (hamburger menu), touch-friendly controls, mobile-optimized dialogs, and horizontal-scrollable Kanban board. At the end of this phase, Velo works seamlessly on phones and tablets.
+
+**Reference sections:** PRD §6 (FR-023 through FR-026), PRD §7 (NFR — accessibility), PRD §8 (UI/UX — all screens), Vision §5 (Design Direction — spacing, component philosophy)
+
+**Agent prompt:** "Make Velo fully responsive for mobile browsers. The app currently only works well on desktop. All changes should use Tailwind responsive prefixes (sm:, md:, lg:) — no separate mobile components unless absolutely necessary. Key changes: (1) Sidebar: hidden by default on mobile (<1024px), toggled via hamburger icon in header, renders as overlay with backdrop. (2) Header: compact on mobile — hamburger left, Create button center or right, timer + avatar condensed. (3) Kanban Board: horizontal scroll with snap on mobile, columns keep their width (272px), cards full-width within columns. Touch drag & drop should still work via @hello-pangea/dnd (it supports touch). (4) Dashboard: stat cards stack vertically on mobile (1 column), recent tasks list full-width. (5) Projects page: cards stack to single column on mobile. (6) Billing: table becomes card-based on mobile or horizontally scrollable. Summary cards stack vertically. (7) All dialogs: full-screen or bottom-sheet on mobile (<640px) using responsive Tailwind classes. (8) Forms: adequate spacing (gap-4), inputs full-width, appropriate input types for mobile keyboards. (9) Login page: already fairly responsive, verify padding/margins. (10) Settings pages: single column on mobile, form sections stack. (11) Invoices: list cards stack, detail/editor form single column. Test every page at 375px width (iPhone SE) and 390px (iPhone 14)."
+
+- [x] **TASK-092** — Add mobile sidebar with hamburger menu
+  Files: `src/components/layout/Sidebar.tsx`, `src/components/layout/Header.tsx`, `src/app/(dashboard)/layout.tsx`
+  Notes: On screens <1024px (`lg:` breakpoint): sidebar hidden by default. Add a hamburger button (Menu icon from Lucide) to the left side of the Header. When clicked, sidebar slides in from the left as an overlay (fixed position, z-50, full height). Dark backdrop behind sidebar (bg-black/40, click to close). Close on nav link click. Use React state in the dashboard layout, passed via context or props. On desktop (>=1024px): sidebar behaves as before (fixed, always visible), hamburger hidden. Add smooth slide-in transition (transform translateX, 200ms).
+
+- [x] **TASK-093** — Make Header responsive
+  Files: `src/components/layout/Header.tsx`
+  Notes: Mobile (<640px): compact layout. Hamburger icon on left (from TASK-092). Create button: keep it but make it icon-only on mobile (just the Plus icon, no "Create" text) using `hidden sm:inline` on the text. Active timer bar: condense to just the timer display + stop button on mobile (hide task name). Avatar: hide the name text on mobile, show only the initials circle. Use `gap-2` instead of `gap-3` on mobile. Ensure total header height stays at h-14.
+
+- [x] **TASK-094** — Make Dashboard responsive
+  Files: `src/app/(dashboard)/page.tsx`
+  Notes: Stat cards: `grid grid-cols-1 sm:grid-cols-3 gap-4`. Each card takes full width on mobile. Active timer widget: full-width on all sizes. Recent tasks list: already likely full-width, ensure no horizontal overflow. Welcome heading: `text-xl sm:text-2xl`. Check padding — may need `p-4 sm:p-6` on the main content area.
+
+- [x] **TASK-095** — Make Projects page responsive
+  Files: `src/app/(dashboard)/projects/page.tsx`
+  Notes: Project cards grid: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4`. "New Project" button: full-width on mobile or keep as-is if it fits. Page title: smaller on mobile. Archive link: ensure touch-friendly.
+
+- [x] **TASK-096** — Make Kanban Board responsive
+  Files: `src/components/kanban/KanbanBoard.tsx`, `src/components/kanban/KanbanColumn.tsx`, `src/app/(dashboard)/projects/[projectId]/page.tsx`
+  Notes: Board container: `overflow-x-auto` with `-webkit-overflow-scrolling: touch` and `scroll-snap-type: x mandatory` on mobile. Each column: `scroll-snap-align: start`. Columns keep 272px width — don't shrink them. On mobile the project header (title + Epics/Settings links): stack vertically or wrap. Ensure the filter bar is scrollable or wraps on mobile. The board should feel like Trello on mobile — swipe between columns.
+
+- [x] **TASK-097** — Make Billing page responsive
+  Files: `src/app/(dashboard)/billing/page.tsx`, `src/components/billing/BillingSummary.tsx`, `src/components/billing/BillingTable.tsx`
+  Notes: Summary cards: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4`. Date range picker: stack the inputs vertically on mobile or use a compact layout. Billing table: wrap in `overflow-x-auto` for horizontal scroll on mobile, OR convert to card-based layout on mobile using a responsive approach (hide table on mobile, show cards). Export button: full-width on mobile below the table.
+
+- [x] **TASK-098** — Make all Dialogs mobile-friendly
+  Files: `src/components/ui/Dialog.tsx`, `src/components/tasks/TaskForm.tsx`, `src/components/recurring/RecurringTaskForm.tsx`, `src/components/projects/ProjectForm.tsx`
+  Notes: Dialog component: on mobile (<640px), dialogs should be full-screen or near-full-screen (`fixed inset-0 sm:inset-auto sm:max-w-lg`). Remove the backdrop-blur on mobile for performance. Ensure close button is large enough (44px tap target). TaskForm: inputs stack vertically with full width. Dropdowns need adequate tap targets. Form submit button: full-width on mobile.
+
+- [x] **TASK-099** — Make Settings and Invoice pages responsive
+  Files: `src/app/(dashboard)/settings/page.tsx`, `src/app/(dashboard)/invoices/page.tsx`, `src/app/(dashboard)/invoices/[invoiceId]/page.tsx`, `src/components/invoices/InvoiceForm.tsx`, `src/components/invoices/InvoiceList.tsx`
+  Notes: Settings: form sections already likely single-column, ensure adequate padding on mobile. Invoice list: cards stack vertically on mobile. Invoice detail: two-column layout collapses to single column (`grid grid-cols-1 lg:grid-cols-2`). Line items table: horizontally scrollable on mobile. Invoice action buttons: stack vertically or wrap on mobile.
+
+- [x] **TASK-100** — Make Epics and Task Detail pages responsive
+  Files: `src/app/(dashboard)/projects/[projectId]/epics/page.tsx`, `src/components/tasks/TaskDetailModal.tsx`, `src/components/tasks/TaskDetail.tsx`
+  Notes: Epics list: single column on mobile, cards full-width. Task detail modal: full-screen on mobile (same approach as Dialog in TASK-098). Timer controls: ensure play/stop buttons are at least 44px. Time entries list: full-width, entries stack cleanly.
+
+- [x] **TASK-101** — Global responsive fixes and main layout padding
+  Files: `src/app/(dashboard)/layout.tsx`, `src/app/globals.css`
+  Notes: Main content area: `p-4 sm:p-6` (less padding on mobile). Ensure no horizontal overflow on any page — add `overflow-x-hidden` on the main content wrapper if needed. Check that all text sizes are readable on mobile (min 14px for body text). Add `<meta name="viewport" content="width=device-width, initial-scale=1">` if not already present in the root layout (Next.js usually handles this). Test login page on mobile — should already be fairly responsive but verify.
+
+- [x] **TASK-102** — Mobile QA pass on all screens
+  Files: All components
+  Notes: Test every page at 375px (iPhone SE), 390px (iPhone 14), and 768px (iPad). Pages to verify: Login, Dashboard, Projects list, Kanban board, Task detail, Epics, Billing, Invoices list, Invoice detail, Settings, Project settings (including recurring tasks section). Check for: horizontal overflow, text truncation issues, tap targets too small, overlapping elements, unreadable text, dialogs unusable. Fix all issues found. Run `npx tsc --noEmit` to verify no TypeScript errors.
+
+---
+
 ## Agent Session Guide
 
 ### How to Structure Coding Sessions
@@ -488,8 +542,9 @@ Each phase is designed to be completed in 1–3 coding sessions. Here's how to a
 - **Phase 6:** 3–4 sessions (full visual redesign + hourly rate feature)
 - **Phase 7:** 4–6 sessions (multi-currency + invoice generation + PDF export + business settings)
 - **Phase 8:** 2–3 sessions (recurring task templates + cron job + management UI)
+- **Phase 9:** 2–3 sessions (full responsive/mobile optimization across all pages)
 
-**Total estimated sessions: 17–27**
+**Total estimated sessions: 19–30**
 
 ### When You Hit a Problem
 

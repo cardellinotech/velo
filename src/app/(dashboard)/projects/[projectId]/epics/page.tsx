@@ -37,11 +37,11 @@ export default function EpicsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 max-w-2xl">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-8 w-full max-w-2xl">
+      <div className="flex items-center gap-3 flex-wrap">
         <Link
           href={`/projects/${projectId}`}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
+          className="flex items-center justify-center w-11 h-11 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
           aria-label="Back to board"
         >
           <ArrowLeft className="w-4 h-4" />

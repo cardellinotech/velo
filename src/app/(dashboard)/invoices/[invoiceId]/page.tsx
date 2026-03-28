@@ -29,7 +29,7 @@ export default function InvoiceDetailPage({
         </div>
         <div className="flex flex-col gap-4 animate-pulse">
           <div className="h-8 w-48 bg-surface rounded-lg" />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="h-40 bg-surface rounded-xl" />
             <div className="h-40 bg-surface rounded-xl" />
           </div>

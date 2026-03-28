@@ -13,7 +13,7 @@ interface TaskDetailModalProps {
 
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
   return (
-    <Dialog open={taskId !== null} onClose={onClose} className="max-w-4xl h-[80vh]" noPadding>
+    <Dialog open={taskId !== null} onClose={onClose} className="sm:max-w-4xl sm:h-[80vh]" noPadding fullScreenMobile>
       {taskId && <TaskDetailModalContent taskId={taskId} onClose={onClose} />}
     </Dialog>
   );

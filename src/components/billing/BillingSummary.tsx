@@ -112,7 +112,7 @@ export function BillingSummary() {
   return (
     <div className="flex flex-col gap-6">
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         <DateRangePicker
           preset={dateRange.preset}
           startDate={dateRange.startDate}
@@ -161,7 +161,7 @@ export function BillingSummary() {
 
       {/* Summary cards */}
       {isLoading ? (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="rounded-xl border border-border/60 p-5 animate-pulse overflow-hidden">
               <div className="h-[3px] bg-surface rounded -mt-5 -mx-5 mb-5" />
@@ -171,7 +171,7 @@ export function BillingSummary() {
           ))}
         </div>
       ) : (
-        <div className={cn("grid gap-5", hasAmount ? "grid-cols-4" : "grid-cols-3")}>
+        <div className={cn("grid gap-4", hasAmount ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
           <SummaryCard
             label={summaryConfigs[0].label}
             value={formatDurationShort(summaryData.totalDurationMs)}
@@ -207,20 +207,22 @@ export function BillingSummary() {
 
       {/* Table + Export */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-sm font-semibold text-text-primary">Breakdown</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             {entriesData && (
               <BillingExport
                 entries={entriesData}
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
+                className="w-full sm:w-auto"
               />
             )}
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setCreateInvoiceOpen(true)}
+              className="w-full sm:w-auto"
             >
               <FilePlus className="w-4 h-4" />
               Create Invoice

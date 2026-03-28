@@ -139,7 +139,8 @@ export function BillingTable({ entries }: BillingTableProps) {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 overflow-hidden bg-white shadow-card">
+    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+    <div className="rounded-xl border border-border/60 overflow-hidden bg-white shadow-card min-w-[480px]">
       {/* Header */}
       <div className="flex items-center px-5 py-3 bg-slate-50/80 border-b border-border/40 text-[11px] font-semibold text-text-muted uppercase tracking-wide">
         <span className="flex-1">Project / Epic / Type</span>
@@ -245,6 +246,7 @@ export function BillingTable({ entries }: BillingTableProps) {
           </div>
         );
       })}
+    </div>
     </div>
   );
 }

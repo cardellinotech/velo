@@ -236,7 +236,7 @@ export function BusinessSettingsForm() {
       </SectionCard>
 
       <SectionCard title="Invoice Numbering" gradient="from-violet-500 to-purple-500">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Prefix"
             value={invoicePrefix}
@@ -268,7 +268,7 @@ export function BusinessSettingsForm() {
       </SectionCard>
 
       <div className="flex justify-end">
-        <Button type="submit" loading={saving}>
+        <Button type="submit" loading={saving} className="w-full sm:w-auto">
           Save settings
         </Button>
       </div>

@@ -75,7 +75,7 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
             Open board
             <ArrowRight className="w-3 h-3" />
           </Link>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
             <button
               onClick={() => setEditOpen(true)}
               className="text-[11px] text-text-muted hover:text-text-primary px-2 py-1 rounded-lg hover:bg-surface transition-colors"
@@ -114,9 +114,9 @@ export default function ProjectsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Projects</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Projects</h1>
           <p className="text-sm text-text-secondary mt-1">
             {projects === undefined
               ? "Loading…"
@@ -139,7 +139,7 @@ export default function ProjectsPage() {
       </div>
 
       {projects === undefined ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-40 rounded-xl border border-border/60 bg-white animate-pulse">
               <div className="h-[3px] bg-surface rounded-t-xl" />
@@ -173,7 +173,7 @@ export default function ProjectsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
             <ProjectCard key={project._id} project={project} />
           ))}

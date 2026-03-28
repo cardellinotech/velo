@@ -127,9 +127,9 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
       </div>
 
       {/* Two-column body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col sm:flex-row flex-1 overflow-auto sm:overflow-hidden">
         {/* LEFT — Title + Description */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-5 min-w-0">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 flex flex-col gap-5 min-w-0">
           {/* Title */}
           <input
             ref={titleRef}
@@ -262,7 +262,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
         </div>
 
         {/* RIGHT — Status + Details */}
-        <div className="w-64 shrink-0 border-l border-border overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        <div className="w-full sm:w-64 shrink-0 border-t sm:border-t-0 sm:border-l border-border overflow-y-auto px-4 py-4 flex flex-col gap-4">
           {/* Status button */}
           <div className="relative">
             <button
@@ -380,11 +380,11 @@ function TimeEntryRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0 text-sm group">
-      <span className="text-text-secondary text-xs w-20 shrink-0">
+    <div className="flex items-center gap-2 py-2 border-b border-border/50 last:border-0 text-sm group">
+      <span className="text-text-secondary text-xs sm:text-xs w-20 shrink-0">
         {formatDate(entry.startTime)}
       </span>
-      <span className="font-mono text-xs tabular-nums text-text-primary">
+      <span className="font-mono text-sm tabular-nums text-text-primary shrink-0">
         {entry.duration !== undefined ? formatDuration(entry.duration) : "—"}
       </span>
       {entry.description && (
@@ -397,10 +397,10 @@ function TimeEntryRow({
       )}
       <button
         onClick={onRemove}
-        className="opacity-0 group-hover:opacity-100 p-1 text-text-secondary hover:text-red-600 transition-colors rounded shrink-0"
+        className="sm:opacity-0 sm:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-red-600 transition-colors rounded shrink-0"
         aria-label="Delete time entry"
       >
-        <Trash2 className="w-3 h-3" />
+        <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
   );

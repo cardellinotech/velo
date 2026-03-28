@@ -176,7 +176,7 @@ export function RecurringTaskForm({
               <select
                 value={taskType}
                 onChange={(e) => setTaskType(e.target.value)}
-                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary py-2.5 sm:py-0"
               >
                 {Object.entries(TASK_TYPES).map(([key, { label }]) => (
                   <option key={key} value={key}>{label}</option>
@@ -188,7 +188,7 @@ export function RecurringTaskForm({
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary py-2.5 sm:py-0"
                 style={{ color: PRIORITIES[priority as keyof typeof PRIORITIES]?.color }}
               >
                 {Object.entries(PRIORITIES).map(([key, { label }]) => (
@@ -201,7 +201,7 @@ export function RecurringTaskForm({
               <select
                 value={epicId}
                 onChange={(e) => setEpicId(e.target.value)}
-                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary"
+                className="text-sm bg-transparent border-0 text-text-primary focus:outline-none cursor-pointer hover:text-primary py-2.5 sm:py-0"
               >
                 <option value="">No epic</option>
                 {openEpics.map((epic) => (
@@ -282,9 +282,9 @@ export function RecurringTaskForm({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border px-6 py-3 flex justify-end gap-2 shrink-0">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={loading}>
+        <div className="border-t border-border px-6 py-3 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0">
+          <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">Cancel</Button>
+          <Button type="submit" loading={loading} className="w-full sm:w-auto">
             {isEdit ? "Save changes" : "Create"}
           </Button>
         </div>

@@ -43,13 +43,11 @@ export function ActiveTimerBar() {
       {task ? (
         <Link
           href={`/tasks/${activeEntry.taskId}`}
-          className="font-semibold text-text-primary hover:text-primary transition-colors truncate max-w-[140px] text-[13px]"
+          className="hidden sm:inline font-semibold text-text-primary hover:text-primary transition-colors truncate max-w-[140px] text-[13px]"
         >
           {task.title}
         </Link>
-      ) : (
-        <span className="font-medium text-text-secondary text-xs">Loading…</span>
-      )}
+      ) : null}
       {project && (
         <span className="text-text-muted text-[11px] truncate max-w-[100px] hidden sm:inline">
           {project.name}
@@ -61,7 +59,7 @@ export function ActiveTimerBar() {
       />
       <button
         onClick={handleStop}
-        className="flex items-center justify-center w-6 h-6 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-all duration-150 ml-0.5"
+        className="flex items-center justify-center w-11 h-11 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-all duration-150"
         aria-label="Stop timer"
       >
         <Square className="w-3.5 h-3.5" />

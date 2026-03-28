@@ -5,9 +5,9 @@ import { api } from "../../../convex/_generated/api";
 import { ActiveTimerBar } from "@/components/timer/ActiveTimerBar";
 import { useCreateTask } from "@/contexts/CreateTaskContext";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Menu } from "lucide-react";
 
-export function Header() {
+export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const user = useQuery(api.users.current);
   const { projectId, openCreateTask } = useCreateTask();
 
@@ -21,9 +21,16 @@ export function Header() {
     : null;
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-white/80 backdrop-blur-sm px-6">
-      {/* Left: Create button (visible when on a project page) */}
-      <div>
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-white/80 backdrop-blur-sm px-4 sm:px-6">
+      {/* Left: hamburger (mobile) + Create button (visible when on a project page) */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden flex items-center justify-center w-11 h-11 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         {projectId && (
           <button
             onClick={openCreateTask}
@@ -35,13 +42,13 @@ export function Header() {
             )}
           >
             <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Create
+            <span className="hidden sm:inline">Create</span>
           </button>
         )}
       </div>
 
       {/* Right: active timer + user info */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <ActiveTimerBar />
         <div className="flex items-center gap-2.5">
           {initials && (
@@ -52,7 +59,7 @@ export function Header() {
               {initials}
             </div>
           )}
-          <span className="text-sm font-medium text-text-secondary">
+          <span className="hidden sm:inline text-sm font-medium text-text-secondary">
             {user?.name ?? user?.email ?? ""}
           </span>
         </div>

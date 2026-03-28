@@ -57,7 +57,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   const config = columnConfig[status];
 
   return (
-    <div className="flex flex-col w-[272px] shrink-0">
+    <div className="flex flex-col w-[272px] shrink-0" style={{ scrollSnapAlign: "start" }}>
       {/* Column header */}
       <div className={cn(
         "flex items-center justify-between mb-3 px-1.5 pb-3 border-b-2",

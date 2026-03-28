@@ -53,7 +53,7 @@ function EpicRow({ epic, projectId }: { epic: Doc<"epics">; projectId: Id<"proje
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <span className={`text-xs font-medium px-1.5 py-0.5 rounded-sm ${
             epic.status === "open"
               ? "bg-green-50 text-green-700"
@@ -63,14 +63,14 @@ function EpicRow({ epic, projectId }: { epic: Doc<"epics">; projectId: Id<"proje
           </span>
           <button
             onClick={() => setEditOpen(true)}
-            className="p-1 text-text-secondary hover:text-text-primary rounded transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-text-primary rounded transition-colors"
             aria-label="Edit epic"
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleToggleStatus}
-            className="p-1 text-text-secondary hover:text-text-primary rounded transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-text-primary rounded transition-colors"
             aria-label={epic.status === "open" ? "Close epic" : "Reopen epic"}
           >
             {epic.status === "open" ? (

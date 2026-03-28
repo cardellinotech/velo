@@ -54,7 +54,7 @@ export function TimerControl({ taskId, variant = "full", className }: TimerContr
             onClick={stop}
             disabled={isPending}
             aria-label="Stop timer"
-            className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 min-h-[44px] px-2 text-sm text-red-600 hover:text-red-700 transition-colors disabled:opacity-50"
           >
             <Square className="w-4 h-4" />
             Stop
@@ -65,7 +65,7 @@ export function TimerControl({ taskId, variant = "full", className }: TimerContr
           onClick={start}
           disabled={isPending}
           aria-label="Start timer"
-          className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 min-h-[44px] px-2 text-sm text-text-secondary hover:text-primary transition-colors disabled:opacity-50"
         >
           <Play className="w-4 h-4" />
           Start timer

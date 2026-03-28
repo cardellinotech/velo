@@ -25,7 +25,7 @@ const navItems = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
   const projects = useQuery(api.projects.listActive);
@@ -36,7 +36,19 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-white/[0.06] relative overflow-hidden">
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      <aside className={cn(
+        "flex w-[260px] shrink-0 flex-col border-r border-white/[0.06] relative overflow-hidden",
+        "fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto lg:h-full",
+        "transition-transform duration-200",
+        open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
       {/* Background gradient */}
       <div
         className="absolute inset-0 -z-10"
@@ -72,6 +84,7 @@ export function Sidebar() {
             <li key={href}>
               <Link
                 href={href}
+                onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
                   isActive(href)
@@ -112,6 +125,7 @@ export function Sidebar() {
                     <li key={project._id}>
                       <Link
                         href={href}
+                        onClick={onClose}
                         className={cn(
                           "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150",
                           active
@@ -151,5 +165,6 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

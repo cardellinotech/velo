@@ -11,9 +11,10 @@ interface DialogProps {
   children: React.ReactNode;
   className?: string;
   noPadding?: boolean;
+  fullScreenMobile?: boolean;
 }
 
-export function Dialog({ open, onClose, title, children, className, noPadding }: DialogProps) {
+export function Dialog({ open, onClose, title, children, className, noPadding, fullScreenMobile }: DialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +31,10 @@ export function Dialog({ open, onClose, title, children, className, noPadding }:
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className={cn(
+        "fixed inset-0 z-50 flex justify-center",
+        fullScreenMobile ? "items-end sm:items-center" : "items-end sm:items-center"
+      )}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[6px]" onClick={onClose} />
@@ -41,8 +45,11 @@ export function Dialog({ open, onClose, title, children, className, noPadding }:
         aria-modal="true"
         aria-labelledby={title ? "dialog-title" : undefined}
         className={cn(
-          "relative z-10 w-full max-w-md rounded-2xl bg-white shadow-modal mx-4 animate-scale-in",
-          "border border-border/60 flex flex-col max-h-[90vh]",
+          "relative z-10 w-full bg-white shadow-modal animate-scale-in",
+          "border border-border/60 flex flex-col",
+          fullScreenMobile
+            ? "rounded-none h-full sm:rounded-2xl sm:max-w-md sm:mx-4 sm:h-auto sm:max-h-[90vh]"
+            : "rounded-t-2xl sm:rounded-2xl sm:max-w-md sm:mx-4 max-h-[90vh]",
           className
         )}
       >
@@ -53,7 +60,7 @@ export function Dialog({ open, onClose, title, children, className, noPadding }:
             </h2>
             <button
               onClick={onClose}
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-text-muted hover:bg-surface hover:text-text-primary transition-all duration-150"
+              className="flex items-center justify-center w-11 h-11 sm:w-7 sm:h-7 rounded-lg text-text-muted hover:bg-surface hover:text-text-primary transition-all duration-150"
               aria-label="Close dialog"
             >
               <X className="w-4 h-4" />

@@ -184,6 +184,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 - Invoice generation with PDF export
 - Business settings for invoice details
 - Recurring tasks (daily/weekly/monthly) with automatic creation
+- Fully responsive web layout (all pages mobile-friendly)
 
 **Could Have:**
 - Task filtering and search
@@ -196,7 +197,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 - Multi-user support
 - Sprint management
 - Integrations
-- Mobile app
+- ~~Mobile app~~ Responsive web added (no native app needed)
 - Custom task types beyond the four defaults
 
 ### Core User Flows

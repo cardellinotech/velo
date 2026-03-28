@@ -264,7 +264,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
             </h1>
             <StatusBadge status={invoice.status} />
           </div>
-          <div className="flex items-center gap-4 text-xs text-text-secondary">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
             <span>Issued {formatDate(invoice.issueDate)}</span>
             <span className="text-border">·</span>
             <span className={cn(
@@ -286,7 +286,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
       </div>
 
       {/* Sender + Recipient */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Sender */}
         <div className="rounded-xl border border-border/60 bg-white p-5 flex flex-col gap-3">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">From</p>
@@ -362,7 +362,8 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
       </div>
 
       {/* Line items */}
-      <div className="rounded-xl border border-border/60 bg-white overflow-hidden">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="rounded-xl border border-border/60 bg-white overflow-hidden min-w-[560px]">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/40 bg-surface">
           <p className="text-xs font-semibold text-text-primary uppercase tracking-wide">Line items</p>
         </div>
@@ -501,6 +502,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
           </div>
         </div>
       </div>
+      </div>
 
       {/* Payment details */}
       {(invoice.bankName || invoice.iban || invoice.bic || invoice.paymentTermDays) && (
@@ -508,7 +510,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
             Payment details
           </p>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
             {invoice.bankName && (
               <div>
                 <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">Bank</p>
@@ -560,7 +562,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pb-6">
+      <div className="flex flex-wrap items-center gap-2 pb-6">
         {invoice.status === "draft" && (
           <>
             <Button variant="primary" size="md" onClick={handleSave} loading={isSaving}>

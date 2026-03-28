@@ -556,7 +556,11 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 - **As a** freelancer, **I want to** define tasks that automatically repeat on a schedule (daily, weekly, monthly), **so that** routine work like maintenance, reviews, or client check-ins is always on my board without manual recreation.
 - **Acceptance criteria:** Can create a recurring task template with title, type, priority, recurrence interval, and target project/epic. Task instances are automatically created as normal tasks on the board at the scheduled time. Each instance has its own independent time tracking. Can pause, edit, or delete recurring templates. Can see which tasks were created from a template.
 
-### US-014: Authentication
+### US-014: Mobile Usage
+- **As a** freelancer on the go, **I want to** use Velo on my phone to check tasks, start/stop timers, and view my dashboard, **so that** I can track my work even when I'm away from my desk.
+- **Acceptance criteria:** All pages render correctly on mobile screens (320px+). Sidebar collapses to hamburger menu. Kanban board scrolls horizontally. Forms and dialogs are touch-friendly. Timer controls work on mobile. No horizontal overflow on any page.
+
+### US-015: Authentication
 - **As a** user, **I want to** securely log in, **so that** my data is protected.
 - **Acceptance criteria:** Can sign up and log in via Convex Auth. Unauthenticated users are redirected to login. All data is scoped to the authenticated user.
 
@@ -590,6 +594,10 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | FR-020 | Recurring task templates | P1 | Define tasks that auto-repeat on a schedule | Create template with title, type, priority, project, optional epic, recurrence (daily/weekly/monthly). System auto-creates task instances. Each instance is a normal task with own time tracking. |
 | FR-021 | Recurring task scheduler | P1 | Automatic creation of task instances | Convex cron job checks for due templates and creates task instances. Advances nextDueDate after creation. Handles paused/deleted templates gracefully. |
 | FR-022 | Recurring task management UI | P1 | View and manage recurring task templates | Recurring templates list in project settings or dedicated page. Create/edit/pause/delete templates. Visual indicator on tasks created from templates (e.g. repeat icon). |
+| FR-023 | Responsive layout | P1 | All pages usable on mobile browsers | Breakpoints: mobile (<640px), tablet (640-1024px), desktop (>1024px). Sidebar collapses to hamburger menu on mobile. All content reflows to single column. Touch-friendly tap targets (min 44px). |
+| FR-024 | Mobile Kanban board | P1 | Kanban board works on mobile | Horizontal scrollable columns on mobile, same as desktop but with snap scrolling. Task cards full-width within columns. Drag & drop works with touch. |
+| FR-025 | Mobile navigation | P1 | Navigation accessible on mobile | Sidebar hidden by default on mobile, toggled via hamburger icon in header. Overlay sidebar with backdrop. Active timer bar always visible in header. Create button remains in header. |
+| FR-026 | Mobile-optimized forms | P1 | All dialogs and forms usable on mobile | Dialogs become full-screen or bottom-sheet on mobile. Form inputs use appropriate mobile keyboard types (email, number). Adequate spacing between inputs for touch. |
 
 ---
 
@@ -909,7 +917,7 @@ The following are explicitly NOT included in this PRD and should not be built in
 - Sprint planning, velocity tracking, burndown charts
 - Gantt charts or timeline views
 - Email notifications or in-app notifications
-- Mobile app or PWA
+- ~~Mobile app or PWA~~ **Responsive Web added in Phase 9** (no native app, but full mobile browser support)
 - Third-party integrations (GitHub, Slack, calendar, etc.)
 - Custom workflows or configurable board columns
 - ~~Recurring tasks or templates~~ **MOVED TO SCOPE** (Phase 8)

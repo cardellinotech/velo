@@ -4,7 +4,7 @@ import { Receipt } from "lucide-react";
 export default function BillingPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-y-2">
         <div>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Billing</h1>
           <p className="text-sm text-text-secondary mt-1">

@@ -127,48 +127,54 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
   return (
     <button
       onClick={() => router.push(`/invoices/${invoice._id}`)}
-      className="group flex items-center gap-4 rounded-xl border border-border/60 bg-white px-5 py-4 text-left shadow-card hover:shadow-card-hover hover:border-border transition-all duration-200 hover:-translate-y-px w-full"
+      className="group flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-border/60 bg-white px-4 sm:px-5 py-4 text-left shadow-card hover:shadow-card-hover hover:border-border transition-all duration-200 hover:-translate-y-px w-full"
     >
-      {/* Invoice number */}
-      <span className="font-mono text-sm font-semibold text-text-primary shrink-0 w-32">
-        {invoice.invoiceNumber}
-      </span>
+      {/* Top row on mobile: invoice number + amount + status */}
+      <div className="flex items-center gap-3 sm:contents">
+        {/* Invoice number */}
+        <span className="font-mono text-sm font-semibold text-text-primary shrink-0 sm:w-32">
+          {invoice.invoiceNumber}
+        </span>
 
-      {/* Client + project */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text-primary truncate">
-          {invoice.clientName}
-        </p>
-        {invoice.projectName && (
-          <p className="text-xs text-text-muted mt-0.5">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface text-text-secondary text-[11px] font-medium">
-              {invoice.projectName}
-            </span>
+        {/* Client + project */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-text-primary truncate">
+            {invoice.clientName}
           </p>
-        )}
+          {invoice.projectName && (
+            <p className="text-xs text-text-muted mt-0.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface text-text-secondary text-[11px] font-medium">
+                {invoice.projectName}
+              </span>
+            </p>
+          )}
+        </div>
+
+        {/* Amount + Status on mobile */}
+        <div className="flex items-center gap-2 sm:contents shrink-0">
+          {/* Overdue indicator */}
+          {isEffectivelyOverdue && (
+            <OverdueBadge daysOverdue={daysOverdue} />
+          )}
+
+          {/* Date */}
+          <span className="text-xs text-text-secondary shrink-0 hidden sm:block">
+            {formatDate(invoice.issueDate)}
+          </span>
+
+          {/* Amount */}
+          <span className="font-mono text-sm font-semibold text-text-primary shrink-0">
+            {formatAmount(invoice.total, invoice.currency)}
+          </span>
+
+          {/* Status badge */}
+          <StatusBadge status={invoice.status} />
+        </div>
       </div>
 
-      {/* Overdue indicator */}
-      {isEffectivelyOverdue && (
-        <OverdueBadge daysOverdue={daysOverdue} />
-      )}
-
-      {/* Date */}
-      <span className="text-xs text-text-secondary shrink-0 hidden sm:block">
-        {formatDate(invoice.issueDate)}
-      </span>
-
-      {/* Amount */}
-      <span className="font-mono text-sm font-semibold text-text-primary shrink-0">
-        {formatAmount(invoice.total, invoice.currency)}
-      </span>
-
-      {/* Status badge */}
-      <StatusBadge status={invoice.status} />
-
-      {/* Quick actions (show on hover) */}
+      {/* Quick actions (show on hover on desktop, hidden on mobile) */}
       <div
-        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {invoice.status === "draft" && (
@@ -230,7 +236,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
       </div>
 
       {/* Arrow */}
-      <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      <ArrowRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hidden sm:block" />
     </button>
   );
 }
@@ -247,7 +253,7 @@ export function InvoiceList() {
   return (
     <div className="flex flex-col gap-5">
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 p-1 bg-surface rounded-xl border border-border/40 w-fit">
+      <div className="flex items-center gap-1 p-1 bg-surface rounded-xl border border-border/40 overflow-x-auto w-full sm:w-fit">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}

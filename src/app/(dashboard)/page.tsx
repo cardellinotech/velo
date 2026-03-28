@@ -118,9 +118,9 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       {/* Welcome section */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-y-2">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
             Hey {user?.name?.split(" ")[0] ?? "there"}
           </h1>
           <p className="text-sm text-text-secondary mt-1">
@@ -186,7 +186,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       {isLoading ? (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
           {[0, 1, 2].map((i) => (
             <div key={i} className="rounded-xl border border-border p-5 animate-pulse">
               <div className="h-8 w-16 bg-surface rounded-md mb-2" />
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
           {statValues.map((stat) => (
             <StatCard
               key={stat.key}

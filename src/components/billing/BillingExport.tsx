@@ -13,9 +13,10 @@ interface BillingExportProps {
   entries: BillingEntry[];
   startDate: number;
   endDate: number;
+  className?: string;
 }
 
-export function BillingExport({ entries, startDate, endDate }: BillingExportProps) {
+export function BillingExport({ entries, startDate, endDate, className }: BillingExportProps) {
   function handleExport() {
     const rows = entries.map((entry) => {
       const currency = entry.currency ?? "EUR";
@@ -47,7 +48,7 @@ export function BillingExport({ entries, startDate, endDate }: BillingExportProp
   }
 
   return (
-    <Button variant="secondary" size="sm" onClick={handleExport} disabled={entries.length === 0}>
+    <Button variant="secondary" size="sm" onClick={handleExport} disabled={entries.length === 0} className={className}>
       <Download className="w-4 h-4" />
       Export CSV
     </Button>

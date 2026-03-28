@@ -76,7 +76,7 @@ export default function ProjectBoardPage() {
     <>
       <div className="flex flex-col gap-5">
         {/* Header */}
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-text-primary tracking-tight">{project.name}</h1>
             {project.clientName && (

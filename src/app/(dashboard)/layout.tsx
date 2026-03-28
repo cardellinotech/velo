@@ -14,6 +14,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useKeyboardShortcuts({
     "?": () => setShortcutsOpen(true),
@@ -22,10 +23,10 @@ export default function DashboardLayout({
   return (
     <CreateTaskProvider>
       <div className="flex h-full">
-        <Sidebar />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-auto p-6">{children}</main>
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+          <main className="flex-1 overflow-auto overflow-x-hidden p-4 sm:p-6">{children}</main>
         </div>
         <ToastContainer />
         <ShortcutsDialog

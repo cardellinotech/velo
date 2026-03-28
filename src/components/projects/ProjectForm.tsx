@@ -171,11 +171,11 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
             className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors duration-100 resize-none"
           />
         </div>
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="secondary" onClick={handleClose} disabled={loading}>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={handleClose} disabled={loading} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading} className="w-full sm:w-auto">
             {project ? "Save changes" : "Create project"}
           </Button>
         </div>

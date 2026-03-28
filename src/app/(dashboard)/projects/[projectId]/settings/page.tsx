@@ -132,7 +132,7 @@ export default function ProjectSettingsPage() {
       <div className="flex items-center gap-3">
         <Link
           href={`/projects/${projectId}`}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
+          className="flex items-center justify-center w-11 h-11 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface transition-all duration-150"
           aria-label="Back to board"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -230,7 +230,7 @@ export default function ProjectSettingsPage() {
       <hr className="border-border/40" />
 
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Repeat className="w-4 h-4 text-text-secondary" />
             <h2 className="text-sm font-semibold text-text-primary">Recurring Tasks</h2>
@@ -257,7 +257,7 @@ export default function ProjectSettingsPage() {
       <div className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-text-primary">Danger zone</h2>
         {project.status === "active" ? (
-          <div className="flex items-center justify-between rounded-xl border border-error/20 bg-error/5 p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-error/20 bg-error/5 p-5">
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-error/10 shrink-0 mt-0.5">
                 <AlertTriangle className="w-4 h-4 text-error" />
@@ -278,7 +278,7 @@ export default function ProjectSettingsPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-xl border border-border/60 bg-surface/50 p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border/60 bg-surface/50 p-5">
             <div>
               <p className="text-sm font-medium text-text-primary">Restore project</p>
               <p className="text-xs text-text-secondary mt-0.5">

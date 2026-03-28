@@ -35,9 +35,9 @@ export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
 
   if (tasks === undefined || epics === undefined) {
     return (
-      <div className="flex gap-4">
+      <div className="flex gap-4 overflow-x-auto pb-4">
         {COLUMN_ORDER.map((status) => (
-          <div key={status} className="flex flex-col w-64 shrink-0 gap-3 animate-pulse">
+          <div key={status} className="flex flex-col w-[272px] shrink-0 gap-3 animate-pulse">
             <div className="h-5 w-32 bg-border rounded" />
             <div className="flex flex-col gap-2">
               {[...Array(3)].map((_, i) => (
@@ -149,6 +149,7 @@ export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
           className="flex gap-4 overflow-x-auto pb-4"
           role="region"
           aria-label="Kanban board"
+          style={{ WebkitOverflowScrolling: "touch", scrollSnapType: "x mandatory" }}
         >
           {COLUMN_ORDER.map((status) => (
             <KanbanColumn
