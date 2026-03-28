@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -10,10 +10,8 @@ import { Zap } from "lucide-react";
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
-  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,11 +20,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn("password", {
-        email,
-        password,
-        ...(mode === "signUp" ? { name, flow: "signUp" } : { flow: "signIn" }),
-      });
+      await signIn("password", { email, password, flow: "signIn" });
       router.push("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong.";
@@ -58,24 +52,13 @@ export default function LoginPage() {
             Velo
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
-            {mode === "signIn" ? "Welcome back. Sign in to continue." : "Create your account to get started."}
+            Welcome back. Sign in to continue.
           </p>
         </div>
 
         {/* Card */}
         <div className="rounded-2xl border border-border bg-white/80 backdrop-blur-sm p-7 shadow-elevated">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {mode === "signUp" && (
-              <Input
-                label="Name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Dominic Cardellino"
-                autoComplete="name"
-                required
-              />
-            )}
             <Input
               label="Email"
               type="email"
@@ -91,7 +74,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               required
               minLength={8}
             />
@@ -103,35 +86,9 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" loading={loading} className="w-full mt-2 h-11">
-              {mode === "signIn" ? "Sign in" : "Create account"}
+              Sign in
             </Button>
           </form>
-
-          <div className="mt-5 text-center text-sm text-text-secondary">
-            {mode === "signIn" ? (
-              <>
-                Don&apos;t have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => { setMode("signUp"); setError(null); }}
-                  className="font-semibold text-primary hover:text-primary-hover transition-colors"
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => { setMode("signIn"); setError(null); }}
-                  className="font-semibold text-primary hover:text-primary-hover transition-colors"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-text-muted">
