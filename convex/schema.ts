@@ -12,6 +12,7 @@ export default defineSchema({
     clientName: v.optional(v.string()),
     description: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
+    currency: v.optional(v.string()),
     status: v.union(v.literal("active"), v.literal("archived")),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -78,4 +79,64 @@ export default defineSchema({
     .index("by_projectId", ["projectId"])
     .index("by_userId", ["userId"])
     .index("by_userId_startTime", ["userId", "startTime"]),
+
+  userSettings: defineTable({
+    userId: v.id("users"),
+    defaultCurrency: v.string(),
+    businessName: v.optional(v.string()),
+    businessAddress: v.optional(v.string()),
+    vatId: v.optional(v.string()),
+    taxRate: v.optional(v.number()),
+    bankName: v.optional(v.string()),
+    iban: v.optional(v.string()),
+    bic: v.optional(v.string()),
+    paymentTermDays: v.optional(v.number()),
+    invoicePrefix: v.optional(v.string()),
+    nextInvoiceNumber: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  invoices: defineTable({
+    userId: v.id("users"),
+    projectId: v.id("projects"),
+    invoiceNumber: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("sent"),
+      v.literal("paid"),
+      v.literal("overdue")
+    ),
+    currency: v.string(),
+    issueDate: v.number(),
+    dueDate: v.number(),
+    clientName: v.string(),
+    clientAddress: v.optional(v.string()),
+    senderName: v.string(),
+    senderAddress: v.optional(v.string()),
+    vatId: v.optional(v.string()),
+    taxRate: v.optional(v.number()),
+    bankName: v.optional(v.string()),
+    iban: v.optional(v.string()),
+    bic: v.optional(v.string()),
+    paymentTermDays: v.optional(v.number()),
+    lineItems: v.array(
+      v.object({
+        date: v.optional(v.number()),
+        description: v.string(),
+        hours: v.number(),
+        rate: v.number(),
+        amount: v.number(),
+      })
+    ),
+    subtotal: v.number(),
+    taxAmount: v.optional(v.number()),
+    total: v.number(),
+    notes: v.optional(v.string()),
+    periodStart: v.number(),
+    periodEnd: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_projectId", ["projectId"])
+    .index("by_userId_status", ["userId", "status"]),
 });

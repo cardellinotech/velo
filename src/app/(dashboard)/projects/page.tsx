@@ -10,6 +10,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { FolderKanban, Plus, ArrowRight, Zap, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/currency";
 
 const statusConfig = {
   active: {
@@ -62,7 +63,7 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
         {project.hourlyRate && (
           <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
             <DollarSign className="w-3 h-3" />
-            <span>€{project.hourlyRate}/h</span>
+            <span>{getCurrencySymbol(project.currency ?? "EUR")}{project.hourlyRate}/h</span>
           </div>
         )}
 

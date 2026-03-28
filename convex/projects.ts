@@ -47,6 +47,7 @@ export const create = mutation({
     clientName: v.optional(v.string()),
     description: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
+    currency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -58,6 +59,7 @@ export const create = mutation({
       clientName: args.clientName,
       description: args.description,
       hourlyRate: args.hourlyRate,
+      currency: args.currency,
       status: "active",
       createdAt: now,
       updatedAt: now,
@@ -72,6 +74,7 @@ export const update = mutation({
     clientName: v.optional(v.string()),
     description: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
+    currency: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("archived"))),
   },
   handler: async (ctx, args) => {
@@ -85,6 +88,7 @@ export const update = mutation({
     if (fields.clientName !== undefined) updates.clientName = fields.clientName;
     if (fields.description !== undefined) updates.description = fields.description;
     if (fields.hourlyRate !== undefined) updates.hourlyRate = fields.hourlyRate;
+    if (fields.currency !== undefined) updates.currency = fields.currency;
     if (fields.status !== undefined) updates.status = fields.status;
     await ctx.db.patch(args.projectId, updates);
   },

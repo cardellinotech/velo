@@ -8,6 +8,8 @@ import {
   LayoutDashboard,
   FolderKanban,
   Receipt,
+  FileText,
+  Settings,
   LogOut,
   ChevronRight,
   Zap,
@@ -19,6 +21,8 @@ const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Billing", href: "/billing", icon: Receipt },
+  { label: "Invoices", href: "/invoices", icon: FileText },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {

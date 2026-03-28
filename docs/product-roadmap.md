@@ -356,59 +356,59 @@
 
 **Agent prompt:** "Add multi-currency support and invoice generation to Velo. (1) Add a userSettings table with business details (name, address, VAT ID, tax rate, bank details, payment terms, invoice numbering, default currency). Build a Settings page at /settings. (2) Add currency field to projects schema (optional, falls back to global default). Update project form and settings to show currency dropdown. (3) Update all billing/currency displays to use the correct symbol (€/$/ £/CHF). (4) Add invoices table with full invoice data model. Build invoice CRUD mutations. (5) Build Invoices list page at /invoices with status filters. (6) Build Invoice detail/editor page — form with sender/client blocks, editable line items table, tax calculation, payment details, notes. (7) Add 'Create Invoice' flow from Billing page — pre-populate line items from tracked hours. (8) Build PDF export using @react-pdf/renderer with professional layout. (9) Add invoice status management (draft→sent→paid, overdue detection). Read PRD §12 Invoice Edge Cases carefully."
 
-- [ ] **TASK-068** — Add userSettings table to Convex schema
+- [x] **TASK-068** — Add userSettings table to Convex schema
   Files: `convex/schema.ts`, `convex/userSettings.ts`
   Notes: Add `userSettings` table with all fields from PRD. Create `get` query (returns settings or sensible defaults if none exist). Create `upsert` mutation (create if not exists, update if exists). Index by userId (unique per user). Default currency: "EUR". Default invoicePrefix: "RE". Default nextInvoiceNumber: 1.
 
-- [ ] **TASK-069** — Build Business Settings page
+- [x] **TASK-069** — Build Business Settings page
   Files: `src/app/(dashboard)/settings/page.tsx`, `src/components/settings/BusinessSettingsForm.tsx`
   Notes: Form sections: General (default currency dropdown), Business Details (name, address textarea, VAT ID), Tax (rate % input), Payment (bank name, IBAN, BIC, payment term days), Invoice Numbering (prefix, next number preview showing formatted example). Save button. Success toast on save. Add "Settings" link to sidebar navigation.
 
-- [ ] **TASK-070** — Add currency field to projects and update forms
+- [x] **TASK-070** — Add currency field to projects and update forms
   Files: `convex/schema.ts`, `convex/projects.ts`, `src/components/projects/ProjectForm.tsx`, `src/app/(dashboard)/projects/[projectId]/settings/page.tsx`
   Notes: Add `currency: v.optional(v.string())` to projects table. Update create/update mutations. Add currency dropdown to project form and settings page — shows "Default (EUR)" option plus EUR, USD, CHF, GBP. If not set, falls back to user's defaultCurrency from settings. Show dynamic currency symbol next to hourly rate input.
 
-- [ ] **TASK-071** — Create currency utility helpers
+- [x] **TASK-071** — Create currency utility helpers
   Files: `src/lib/currency.ts`
   Notes: Create helper functions: `getCurrencySymbol(code: string): string` (EUR→"€", USD→"$", GBP→"£", CHF→"CHF"), `formatAmount(amount: number, currency: string): string` (proper symbol placement + 2 decimal places), `SUPPORTED_CURRENCIES` constant array with code + label + symbol. Used across billing, invoices, and project views.
 
-- [ ] **TASK-072** — Update billing views with multi-currency support
+- [x] **TASK-072** — Update billing views with multi-currency support
   Files: `src/components/billing/BillingSummary.tsx`, `src/components/billing/BillingTable.tsx`, `src/components/billing/BillingExport.tsx`, `convex/billing.ts`
   Notes: Update billing queries to return project currency alongside amounts. Update UI to show correct currency symbol per project. Summary cards show amounts per currency if mixed (e.g. "€1,200 + $850"). CSV export includes currency column. BillingTable shows currency symbol per project row.
 
-- [ ] **TASK-073** — Add invoices table to Convex schema and implement mutations
+- [x] **TASK-073** — Add invoices table to Convex schema and implement mutations
   Files: `convex/schema.ts`, `convex/invoices.ts`
   Notes: Add `invoices` table with all fields from PRD. Implement mutations: `create` (auto-generate invoice number from settings prefix + year + padded sequence, auto-increment nextInvoiceNumber, snapshot sender details from userSettings), `update` (only drafts), `updateStatus` (draft→sent→paid, or draft→sent→overdue→paid), `delete` (only drafts). Implement queries: `list` (with optional status/project filter), `get` (single invoice). All auth-gated.
 
-- [ ] **TASK-074** — Build "Create Invoice" flow from Billing page
+- [x] **TASK-074** — Build "Create Invoice" flow from Billing page
   Files: `src/components/billing/BillingSummary.tsx`, `src/components/invoices/CreateInvoiceDialog.tsx`
   Notes: Add "Create Invoice" button next to "Export CSV" on billing page. When clicked: show dialog to select project (required for invoices — one invoice per project). Pre-populate line items from billing data for the selected date range: group by epic → task type, calculate hours × rate per line. User can review and adjust before creating. On confirm: create invoice via mutation, redirect to invoice detail page.
 
-- [ ] **TASK-075** — Build Invoices list page
+- [x] **TASK-075** — Build Invoices list page
   Files: `src/app/(dashboard)/invoices/page.tsx`, `src/components/invoices/InvoiceList.tsx`
   Notes: Page with filter tabs: All, Draft, Sent, Paid, Overdue. Invoice rows showing: invoice number, client name, project name, issue date, total amount with currency, status badge (draft=slate, sent=blue, paid=emerald, overdue=red). Click to open invoice detail. "New Invoice" button (opens create flow). Empty state per filter. Add "Invoices" link to sidebar navigation between Billing and Settings.
 
-- [ ] **TASK-076** — Build Invoice detail/editor page
+- [x] **TASK-076** — Build Invoice detail/editor page
   Files: `src/app/(dashboard)/invoices/[invoiceId]/page.tsx`, `src/components/invoices/InvoiceForm.tsx`
   Notes: Two-column or stacked layout. Sender block (business name, address, VAT ID — pre-filled from snapshot, editable in draft). Recipient block (client name, address — editable). Line items table: each row has description, hours (number), rate (number), amount (calculated). Add/remove rows. Below table: subtotal, tax rate %, tax amount, total. Payment details section (bank, IBAN, BIC, terms). Notes textarea. Action buttons based on status: Draft → "Save", "Mark as Sent", "Export PDF", "Delete". Sent → "Mark as Paid", "Export PDF". Paid → "Export PDF" only.
 
-- [ ] **TASK-077** — Build Invoice PDF export
+- [x] **TASK-077** — Build Invoice PDF export
   Files: `src/components/invoices/InvoicePdfExport.tsx`
   Notes: Use @react-pdf/renderer to generate a professional invoice PDF. Layout: sender info top-left, recipient top-right, invoice number + dates below, line items table with headers (Description, Hours, Rate, Amount), totals section right-aligned (Subtotal, Tax, Total), payment details at bottom, optional notes. Clean typography (Helvetica), proper spacing. "Export PDF" button triggers browser download. Filename: `{invoiceNumber}.pdf`.
 
-- [ ] **TASK-078** — Add invoice status management and overdue detection
+- [x] **TASK-078** — Add invoice status management and overdue detection
   Files: `convex/invoices.ts`, `src/components/invoices/InvoiceList.tsx`
   Notes: Status transitions: draft→sent (sets issueDate if not already), sent→paid, sent→overdue (manual or based on dueDate). Add a visual indicator for overdue invoices (red badge, past-due days count). Consider a Convex scheduled function or cron job to auto-mark overdue invoices (optional — can also be manual for MVP).
 
-- [ ] **TASK-079** — Update project cards and billing to show currency
+- [x] **TASK-079** — Update project cards and billing to show currency
   Files: `src/app/(dashboard)/projects/page.tsx`, `src/components/kanban/TaskCard.tsx`, `src/app/(dashboard)/page.tsx`
   Notes: Project cards: show hourly rate with correct currency symbol (€85/h or $120/h). Dashboard stat cards: show amounts with currency. Ensure currency flows through from project → billing → invoice consistently. Use the `formatAmount` helper everywhere.
 
-- [ ] **TASK-080** — Update sidebar navigation with new routes
+- [x] **TASK-080** — Update sidebar navigation with new routes
   Files: `src/components/layout/Sidebar.tsx`
   Notes: Add "Invoices" nav item (Receipt icon) between Billing and a new "Settings" item (Settings icon). Both follow the existing dark sidebar nav item pattern with active states.
 
-- [ ] **TASK-081** — Final integration test and polish
+- [x] **TASK-081** — Final integration test and polish
   Files: All new files
   Notes: End-to-end test: set up business settings with EUR → create project with USD override → track hours → generate invoice from billing → edit line items → export PDF → mark as sent → mark as paid. Verify: currency symbols correct throughout, invoice numbers increment properly, PDF looks professional, all status transitions work, settings are properly snapshotted on invoice creation. Visual polish pass on all new screens.
 

@@ -14,6 +14,7 @@ export type BillingEntry = {
   projectName: string;
   clientName: string | null;
   hourlyRate: number | null;
+  currency: string | null;
   startTime: number;
   durationMs: number;
   description: string | null;
@@ -62,10 +63,10 @@ export const entries = query({
 
     // Deduplicated project lookups
     const projectIds = [...new Set(completed.map((e) => e.projectId))];
-    const projectMap = new Map<Id<"projects">, { name: string; clientName: string | undefined; hourlyRate: number | undefined }>();
+    const projectMap = new Map<Id<"projects">, { name: string; clientName: string | undefined; hourlyRate: number | undefined; currency: string | undefined }>();
     for (const projectId of projectIds) {
       const project = await ctx.db.get(projectId);
-      if (project) projectMap.set(projectId, { name: project.name, clientName: project.clientName, hourlyRate: project.hourlyRate });
+      if (project) projectMap.set(projectId, { name: project.name, clientName: project.clientName, hourlyRate: project.hourlyRate, currency: project.currency });
     }
 
     return completed
@@ -85,6 +86,7 @@ export const entries = query({
           projectName: project.name,
           clientName: project.clientName ?? null,
           hourlyRate: project.hourlyRate ?? null,
+          currency: project.currency ?? null,
           startTime: e.startTime,
           durationMs: e.duration ?? 0,
           description: e.description ?? null,
@@ -123,22 +125,28 @@ export const summary = query({
     const projectCount = new Set(completed.map((e) => e.projectId)).size;
     const taskCount = new Set(completed.map((e) => e.taskId)).size;
 
-    // Calculate total amount for projects with hourly rates
+    // Calculate amounts per currency for projects with hourly rates
     const projectIds = [...new Set(completed.map((e) => e.projectId))];
-    const projectMap = new Map<Id<"projects">, { hourlyRate: number | undefined }>();
+    const projectMap = new Map<Id<"projects">, { hourlyRate: number | undefined; currency: string | undefined }>();
     for (const projectId of projectIds) {
       const project = await ctx.db.get(projectId);
-      if (project) projectMap.set(projectId, { hourlyRate: project.hourlyRate });
+      if (project) projectMap.set(projectId, { hourlyRate: project.hourlyRate, currency: project.currency });
     }
 
-    let totalAmount: number | null = null;
+    const amountsByCurrency: Record<string, number> = {};
     for (const e of completed) {
       const project = projectMap.get(e.projectId);
       if (project?.hourlyRate) {
         const hours = (e.duration ?? 0) / 3_600_000;
-        totalAmount = (totalAmount ?? 0) + hours * project.hourlyRate;
+        const currency = project.currency ?? "EUR";
+        amountsByCurrency[currency] = (amountsByCurrency[currency] ?? 0) + hours * project.hourlyRate;
       }
     }
+
+    // totalAmount: single value if one currency, null if mixed or none
+    const currencyKeys = Object.keys(amountsByCurrency);
+    const totalAmount: number | null =
+      currencyKeys.length === 1 ? amountsByCurrency[currencyKeys[0]] : null;
 
     const runningEntry = running
       ? {
@@ -149,6 +157,6 @@ export const summary = query({
         }
       : null;
 
-    return { totalDurationMs, totalAmount, runningEntry, projectCount, taskCount };
+    return { totalDurationMs, totalAmount, amountsByCurrency, runningEntry, projectCount, taskCount };
   },
 });

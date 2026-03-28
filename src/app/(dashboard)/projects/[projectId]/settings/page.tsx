@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/hooks/useToast";
+import { SUPPORTED_CURRENCIES, getCurrencySymbol } from "@/lib/currency";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export default function ProjectSettingsPage() {
   const projectId = params.projectId as Id<"projects">;
 
   const project = useQuery(api.projects.get, { projectId });
+  const userSettings = useQuery(api.userSettings.get);
   const updateProject = useMutation(api.projects.update);
   const archiveProject = useMutation(api.projects.archive);
   const unarchiveProject = useMutation(api.projects.unarchive);
@@ -28,6 +30,7 @@ export default function ProjectSettingsPage() {
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
+  const [currency, setCurrency] = useState("");
   const [nameError, setNameError] = useState("");
   const [saving, setSaving] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -40,8 +43,12 @@ export default function ProjectSettingsPage() {
     setClientName(project.clientName ?? "");
     setDescription(project.description ?? "");
     setHourlyRate(project.hourlyRate?.toString() ?? "");
+    setCurrency(project.currency ?? "");
     setInitialized(true);
   }
+
+  const defaultCurrency = userSettings?.defaultCurrency ?? "EUR";
+  const rateSymbol = currency ? getCurrencySymbol(currency) : getCurrencySymbol(defaultCurrency);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +66,7 @@ export default function ProjectSettingsPage() {
         clientName: clientName.trim() || undefined,
         description: description.trim() || undefined,
         hourlyRate: parsedRate,
+        currency: currency || undefined,
       });
       toast.success("Project updated.");
     } catch {
@@ -144,15 +152,50 @@ export default function ProjectSettingsPage() {
           onChange={(e) => setClientName(e.target.value)}
           placeholder="e.g. Acme Corp"
         />
-        <Input
-          label="Hourly rate € (optional)"
-          type="number"
-          min="0"
-          step="0.01"
-          value={hourlyRate}
-          onChange={(e) => setHourlyRate(e.target.value)}
-          placeholder="e.g. 85"
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-primary">Currency (optional)</label>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className={cn(
+              "h-9 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-text-primary",
+              "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+              "hover:border-slate-300 transition-all duration-150"
+            )}
+          >
+            <option value="">Default ({defaultCurrency})</option>
+            {SUPPORTED_CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code} — {c.label} ({c.symbol})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-text-primary">
+            Hourly rate (optional)
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted pointer-events-none select-none">
+              {rateSymbol}
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={hourlyRate}
+              onChange={(e) => setHourlyRate(e.target.value)}
+              placeholder="85"
+              className={cn(
+                "h-9 w-full rounded-lg border border-border/60 bg-white pr-3.5 text-sm text-text-primary",
+                "placeholder:text-text-muted",
+                "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                "hover:border-slate-300 transition-all duration-150",
+                rateSymbol.length > 1 ? "pl-12" : "pl-7"
+              )}
+            />
+          </div>
+        </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="description" className="text-xs font-medium text-text-primary">
             Description (optional)

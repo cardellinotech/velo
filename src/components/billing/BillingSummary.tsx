@@ -11,7 +11,9 @@ import { TimerDisplay } from "@/components/timer/TimerDisplay";
 import { Button } from "@/components/ui/Button";
 import { formatDurationShort } from "@/lib/formatTime";
 import { getPresetRange, type DateRange } from "@/lib/dateRanges";
-import { Clock, Layers, FolderOpen, Banknote, Square } from "lucide-react";
+import { formatAmount } from "@/lib/currency";
+import { Clock, Layers, FolderOpen, Banknote, Square, FilePlus } from "lucide-react";
+import { CreateInvoiceDialog } from "@/components/invoices/CreateInvoiceDialog";
 import { cn } from "@/lib/utils";
 
 const defaultRange = getPresetRange("this_month");
@@ -79,6 +81,7 @@ function SummaryCard({
 export function BillingSummary() {
   const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
   const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | undefined>(undefined);
+  const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
 
   const stopTimer = useMutation(api.timeEntries.stop);
 
@@ -98,7 +101,13 @@ export function BillingSummary() {
 
   const isLoading = entriesData === undefined || summaryData === undefined;
 
-  const hasAmount = summaryData?.totalAmount !== null && summaryData?.totalAmount !== undefined;
+  const amountsByCurrency = summaryData?.amountsByCurrency ?? {};
+  const hasAmount = Object.keys(amountsByCurrency).length > 0;
+
+  function formatAmountSummary(): string {
+    const entries = Object.entries(amountsByCurrency);
+    return entries.map(([currency, amount]) => formatAmount(amount, currency)).join(" + ");
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -187,7 +196,7 @@ export function BillingSummary() {
           {hasAmount && (
             <SummaryCard
               label={summaryConfigs[3].label}
-              value={`€${(summaryData.totalAmount as number).toFixed(2)}`}
+              value={formatAmountSummary()}
               icon={summaryConfigs[3].icon}
               gradient={summaryConfigs[3].gradient}
               iconBg={summaryConfigs[3].iconBg}
@@ -200,13 +209,23 @@ export function BillingSummary() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-text-primary">Breakdown</h2>
-          {entriesData && (
-            <BillingExport
-              entries={entriesData}
-              startDate={dateRange.startDate}
-              endDate={dateRange.endDate}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {entriesData && (
+              <BillingExport
+                entries={entriesData}
+                startDate={dateRange.startDate}
+                endDate={dateRange.endDate}
+              />
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCreateInvoiceOpen(true)}
+            >
+              <FilePlus className="w-4 h-4" />
+              Create Invoice
+            </Button>
+          </div>
         </div>
         {isLoading ? (
           <div className="rounded-xl border border-border/60 overflow-hidden animate-pulse">
@@ -222,6 +241,17 @@ export function BillingSummary() {
           <BillingTable entries={entriesData} />
         )}
       </div>
+
+      {entriesData && projects && (
+        <CreateInvoiceDialog
+          open={createInvoiceOpen}
+          onClose={() => setCreateInvoiceOpen(false)}
+          entries={entriesData}
+          periodStart={dateRange.startDate}
+          periodEnd={dateRange.endDate}
+          projects={projects}
+        />
+      )}
     </div>
   );
 }

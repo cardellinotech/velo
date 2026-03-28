@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3003",
     "dev:convex": "convex dev",
     "build": "next build",
     "start": "next start"
@@ -11,6 +11,7 @@
   "dependencies": {
     "@convex-dev/auth": "^0.0.91",
     "@hello-pangea/dnd": "^18.0.1",
+    "@react-pdf/renderer": "^4.3.2",
     "@tiptap/extension-link": "^3.20.4",
     "@tiptap/extension-placeholder": "^3.20.4",
     "@tiptap/extension-task-item": "^3.20.4",

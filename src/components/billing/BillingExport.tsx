@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { TASK_TYPES } from "@/lib/constants";
 import { formatDate } from "@/lib/formatTime";
 import { formatRangeForFilename } from "@/lib/dateRanges";
+import { formatAmount } from "@/lib/currency";
 import type { BillingEntry } from "../../../convex/billing";
 
 interface BillingExportProps {
@@ -17,6 +18,7 @@ interface BillingExportProps {
 export function BillingExport({ entries, startDate, endDate }: BillingExportProps) {
   function handleExport() {
     const rows = entries.map((entry) => {
+      const currency = entry.currency ?? "EUR";
       const hours = entry.durationMs / 3_600_000;
       const amount = entry.hourlyRate ? hours * entry.hourlyRate : null;
       return {
@@ -27,8 +29,9 @@ export function BillingExport({ entries, startDate, endDate }: BillingExportProp
         "Task Type": TASK_TYPES[entry.taskType].label,
         Date: formatDate(entry.startTime),
         Hours: hours.toFixed(2),
-        "Rate (€/h)": entry.hourlyRate ?? "",
-        "Amount (€)": amount !== null ? amount.toFixed(2) : "",
+        Currency: currency,
+        "Rate (/h)": entry.hourlyRate ?? "",
+        Amount: amount !== null ? formatAmount(amount, currency) : "",
         Description: entry.description ?? "",
       };
     });

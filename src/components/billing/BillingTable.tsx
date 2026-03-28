@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDurationShort } from "@/lib/formatTime";
+import { formatAmount } from "@/lib/currency";
 import { type TaskType } from "@/lib/constants";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 import type { BillingEntry } from "../../../convex/billing";
@@ -26,28 +27,25 @@ type ProjectRow = {
   projectName: string;
   clientName: string | null;
   hourlyRate: number | null;
+  currency: string | null;
   durationMs: number;
   epics: EpicRow[];
 };
 
-function formatAmount(amount: number): string {
-  return `€${amount.toFixed(2)}`;
-}
-
 function groupEntries(entries: BillingEntry[]): ProjectRow[] {
-  const projectMap = new Map<string, { name: string; clientName: string | null; hourlyRate: number | null; entries: BillingEntry[] }>();
+  const projectMap = new Map<string, { name: string; clientName: string | null; hourlyRate: number | null; currency: string | null; entries: BillingEntry[] }>();
 
   for (const entry of entries) {
     const key = entry.projectId;
     if (!projectMap.has(key)) {
-      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, hourlyRate: entry.hourlyRate, entries: [] });
+      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, hourlyRate: entry.hourlyRate, currency: entry.currency, entries: [] });
     }
     projectMap.get(key)!.entries.push(entry);
   }
 
   const projects: ProjectRow[] = [];
 
-  for (const [projectId, { name, clientName, hourlyRate, entries: projectEntries }] of projectMap) {
+  for (const [projectId, { name, clientName, hourlyRate, currency, entries: projectEntries }] of projectMap) {
     const epicMap = new Map<string, { name: string; epicId: string | null; entries: BillingEntry[] }>();
 
     for (const entry of projectEntries) {
@@ -90,6 +88,7 @@ function groupEntries(entries: BillingEntry[]): ProjectRow[] {
       projectName: name,
       clientName,
       hourlyRate,
+      currency,
       durationMs: projectEntries.reduce((s, e) => s + e.durationMs, 0),
       epics,
     });
@@ -175,7 +174,9 @@ export function BillingTable({ entries }: BillingTableProps) {
                   </span>
                 )}
                 {project.hourlyRate && (
-                  <span className="text-[11px] text-emerald-600 font-medium">€{project.hourlyRate}/h</span>
+                  <span className="text-[11px] text-emerald-600 font-medium">
+                    {formatAmount(project.hourlyRate, project.currency ?? "EUR")}/h
+                  </span>
                 )}
               </div>
               <span className="w-24 text-right text-sm font-semibold text-text-primary tabular-nums shrink-0">
@@ -183,7 +184,7 @@ export function BillingTable({ entries }: BillingTableProps) {
               </span>
               {hasAnyRate && (
                 <span className="w-32 text-right text-sm font-bold shrink-0 text-emerald-600 tabular-nums">
-                  {projectAmount !== null ? formatAmount(projectAmount) : "–"}
+                  {projectAmount !== null ? formatAmount(projectAmount, project.currency ?? "EUR") : "–"}
                 </span>
               )}
             </button>

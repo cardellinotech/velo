@@ -174,7 +174,7 @@ export const moveToColumn = mutation({
 
     // Update all tasks in destination column with new orders
     for (let i = 0; i < newDestOrder.length; i++) {
-      const patch: { order: number; updatedAt: number; status?: string } = { order: i, updatedAt: now };
+      const patch: { order: number; updatedAt: number; status?: "todo" | "in_progress" | "in_review" | "done" } = { order: i, updatedAt: now };
       if (newDestOrder[i]._id === args.taskId) {
         patch.status = args.newStatus;
       }
