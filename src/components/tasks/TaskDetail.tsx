@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Clock, Trash2, User, Repeat } from "lucide-react";
+import { ArrowLeft, ChevronDown, Clock, Pencil, Trash2, User, Repeat } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/Button";
@@ -49,6 +49,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
   const [deleting, setDeleting] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<Doc<"timeEntries"> | null>(null);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -204,7 +205,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
                 Time Tracking
               </p>
               <button
-                onClick={() => setManualEntryOpen(true)}
+                onClick={() => { setEditingEntry(null); setManualEntryOpen(true); }}
                 className="text-xs text-text-secondary hover:text-primary transition-colors flex items-center gap-1"
               >
                 <Clock className="w-3 h-3" />
@@ -238,14 +239,16 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
                 key={entry._id}
                 entry={entry}
                 onRemove={() => removeEntry({ timeEntryId: entry._id })}
+                onEdit={() => { setEditingEntry(entry); setManualEntryOpen(true); }}
               />
             ))}
           </div>
 
           <ManualTimeEntry
             open={manualEntryOpen}
-            onClose={() => setManualEntryOpen(false)}
+            onClose={() => { setManualEntryOpen(false); setEditingEntry(null); }}
             taskId={task._id}
+            entry={editingEntry ?? undefined}
           />
 
           {/* Delete */}
@@ -375,9 +378,11 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
 function TimeEntryRow({
   entry,
   onRemove,
+  onEdit,
 }: {
   entry: Doc<"timeEntries">;
   onRemove: () => void;
+  onEdit: () => void;
 }) {
   return (
     <div className="flex items-center gap-2 py-2 border-b border-border/50 last:border-0 text-sm group">
@@ -394,6 +399,16 @@ function TimeEntryRow({
       )}
       {entry.isManual && !entry.description && (
         <span className="text-xs text-text-secondary italic flex-1">manual</span>
+      )}
+      {!entry.isManual && !entry.description && <span className="flex-1" />}
+      {entry.isManual && (
+        <button
+          onClick={onEdit}
+          className="sm:opacity-0 sm:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-primary transition-colors rounded shrink-0"
+          aria-label="Edit time entry"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
       )}
       <button
         onClick={onRemove}
