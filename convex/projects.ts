@@ -30,6 +30,21 @@ export const listActive = query({
   },
 });
 
+export const listArchived = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    return ctx.db
+      .query("projects")
+      .withIndex("by_userId_status", (q) =>
+        q.eq("userId", userId).eq("status", "archived")
+      )
+      .order("desc")
+      .take(200);
+  },
+});
+
 export const get = query({
   args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {

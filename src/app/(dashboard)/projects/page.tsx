@@ -7,7 +7,7 @@ import { Doc } from "../../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/Button";
 import { ProjectForm } from "@/components/projects/ProjectForm";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { FolderKanban, Plus, ArrowRight, Zap, DollarSign } from "lucide-react";
+import { FolderKanban, Plus, ArrowRight, Zap, DollarSign, Archive } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
@@ -103,14 +103,14 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
 
 export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
-  const projects = useQuery(api.projects.list);
+  const projects = useQuery(api.projects.listActive);
 
   useKeyboardShortcuts({
     p: () => setCreateOpen(true),
     P: () => setCreateOpen(true),
   });
 
-  const activeCount = projects?.filter((p) => p.status === "active").length ?? 0;
+  const activeCount = projects?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-8">
@@ -123,10 +123,19 @@ export default function ProjectsPage() {
               : `${activeCount} active project${activeCount !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
-          <Plus className="w-4 h-4" />
-          New project
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/projects/archived"
+            className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text-primary px-3 py-2 rounded-lg hover:bg-surface transition-colors border border-border/60"
+          >
+            <Archive className="w-4 h-4" />
+            Archived
+          </Link>
+          <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            New project
+          </Button>
+        </div>
       </div>
 
       {projects === undefined ? (
