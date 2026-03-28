@@ -20,10 +20,9 @@ interface KanbanBoardProps {
     epicId: string | null;
     priorities: string[];
   };
-  onAddTask: (status: TaskStatus) => void;
 }
 
-export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps) {
+export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
   const toast = useToast();
   const [selectedTaskId, setSelectedTaskId] = useState<Id<"tasks"> | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -158,7 +157,6 @@ export function KanbanBoard({ projectId, filters, onAddTask }: KanbanBoardProps)
               title={TASK_STATUSES[status]}
               tasks={columns[status]}
               epicsMap={epicsMap}
-              onAddTask={onAddTask}
               onTaskClick={setSelectedTaskId}
             />
           ))}

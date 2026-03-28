@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -58,6 +59,12 @@ export function RichTextEditor({
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && content === "") {
+      editor.commands.clearContent();
+    }
+  }, [content, editor]);
 
   if (!editor) return null;
 

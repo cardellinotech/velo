@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -12,7 +12,7 @@ import { KanbanFilters } from "@/components/kanban/KanbanFilters";
 import type { KanbanFilterState } from "@/components/kanban/KanbanFilters";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { TaskStatus } from "@/lib/constants";
+import { useCreateTask } from "@/contexts/CreateTaskContext";
 
 const DEFAULT_FILTERS: KanbanFilterState = {
   taskTypes: [],
@@ -24,19 +24,26 @@ export default function ProjectBoardPage() {
   const params = useParams();
   const projectId = params.projectId as Id<"projects">;
   const project = useQuery(api.projects.get, { projectId });
+  const { registerProject, unregisterProject } = useCreateTask();
 
   const [filters, setFilters] = useState<KanbanFilterState>(DEFAULT_FILTERS);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
-  const [taskFormStatus, setTaskFormStatus] = useState<TaskStatus>("todo");
 
-  function handleAddTask(status: TaskStatus) {
-    setTaskFormStatus(status);
+  const openTaskForm = useCallback(() => {
     setTaskFormOpen(true);
-  }
+  }, []);
+
+  // Register this project with the global create context
+  useEffect(() => {
+    if (project) {
+      registerProject(projectId, openTaskForm);
+    }
+    return () => unregisterProject();
+  }, [projectId, project, registerProject, unregisterProject, openTaskForm]);
 
   useKeyboardShortcuts({
-    n: () => handleAddTask("todo"),
-    N: () => handleAddTask("todo"),
+    n: () => setTaskFormOpen(true),
+    N: () => setTaskFormOpen(true),
   }, project !== undefined && project !== null);
 
   if (project === undefined) {
@@ -105,7 +112,6 @@ export default function ProjectBoardPage() {
         <KanbanBoard
           projectId={projectId}
           filters={filters}
-          onAddTask={handleAddTask}
         />
       </div>
 
@@ -113,7 +119,7 @@ export default function ProjectBoardPage() {
         open={taskFormOpen}
         onClose={() => setTaskFormOpen(false)}
         projectId={projectId}
-        initialStatus={taskFormStatus}
+        initialStatus="todo"
       />
     </>
   );

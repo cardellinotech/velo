@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { Droppable } from "@hello-pangea/dnd";
-import { Plus } from "lucide-react";
 import { Doc, Id } from "../../../convex/_generated/dataModel";
 import { TaskCard } from "./TaskCard";
 import type { TaskStatus } from "@/lib/constants";
@@ -13,7 +12,6 @@ interface KanbanColumnProps {
   title: string;
   tasks: Doc<"tasks">[];
   epicsMap: Record<string, { name: string; color?: string }>;
-  onAddTask: (status: TaskStatus) => void;
   onTaskClick?: (taskId: Id<"tasks">) => void;
 }
 
@@ -54,7 +52,6 @@ export const KanbanColumn = memo(function KanbanColumn({
   title,
   tasks,
   epicsMap,
-  onAddTask,
   onTaskClick,
 }: KanbanColumnProps) {
   const config = columnConfig[status];
@@ -78,13 +75,6 @@ export const KanbanColumn = memo(function KanbanColumn({
             {tasks.length}
           </span>
         </div>
-        <button
-          onClick={() => onAddTask(status)}
-          className="p-1.5 text-text-muted hover:text-text-primary hover:bg-slate-100 rounded-lg transition-all duration-150"
-          aria-label={`Add task to ${title}`}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
       </div>
 
       {/* Droppable area */}
@@ -103,14 +93,8 @@ export const KanbanColumn = memo(function KanbanColumn({
             )}
           >
             {tasks.length === 0 && !snapshot.isDraggingOver && (
-              <div className="flex flex-col items-center justify-center py-8 gap-1">
+              <div className="flex flex-col items-center justify-center py-8">
                 <p className="text-xs text-text-muted">No tasks</p>
-                <button
-                  onClick={() => onAddTask(status)}
-                  className="text-[11px] text-primary hover:text-primary-hover font-medium transition-colors"
-                >
-                  Add one
-                </button>
               </div>
             )}
 
@@ -133,16 +117,6 @@ export const KanbanColumn = memo(function KanbanColumn({
         )}
       </Droppable>
 
-      {/* Add task button at bottom */}
-      {tasks.length > 0 && (
-        <button
-          onClick={() => onAddTask(status)}
-          className="mt-2 flex items-center justify-center gap-1.5 text-xs text-text-muted hover:text-primary font-medium px-2 py-2 rounded-lg hover:bg-primary/5 transition-all duration-150 w-full border border-dashed border-transparent hover:border-primary/20"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add task
-        </button>
-      )}
     </div>
   );
 });

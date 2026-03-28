@@ -98,7 +98,7 @@ export function TaskForm({
             }}
             placeholder="What needs to be done?"
             autoFocus
-            className="text-2xl font-semibold text-text-primary bg-transparent border-0 border-b-2 border-transparent hover:border-border focus:border-primary focus:outline-none transition-colors w-full py-1 placeholder:text-text-secondary/40 placeholder:font-normal"
+            className="text-2xl font-semibold text-text-primary bg-transparent border-0 border-b-2 border-transparent hover:border-border focus:border-primary focus:outline-none focus-visible:outline-none transition-colors w-full py-1 placeholder:text-text-secondary/40 placeholder:font-normal"
           />
           {titleError && (
             <p className="text-xs text-red-600 mt-1.5">{titleError}</p>
