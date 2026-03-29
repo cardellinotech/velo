@@ -400,16 +400,14 @@ function TimeEntryRow({
       {entry.isManual && !entry.description && (
         <span className="text-xs text-text-secondary italic flex-1">manual</span>
       )}
-      {!entry.isManual && !entry.description && <span className="flex-1" />}
-      {entry.isManual && (
-        <button
-          onClick={onEdit}
-          className="sm:opacity-0 sm:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-primary transition-colors rounded shrink-0"
-          aria-label="Edit time entry"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-      )}
+      {!entry.description && <span className="flex-1" />}
+      <button
+        onClick={onEdit}
+        className="sm:opacity-0 sm:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-primary transition-colors rounded shrink-0"
+        aria-label="Edit time entry"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
       <button
         onClick={onRemove}
         className="sm:opacity-0 sm:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-secondary hover:text-red-600 transition-colors rounded shrink-0"
