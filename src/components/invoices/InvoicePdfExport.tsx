@@ -49,13 +49,13 @@ export interface InvoicePdfData {
   notes?: string;
 }
 
-const NAVY = "#1d3557";
+const DARK_BLUE = "#1a2e4a";
 const ACCENT = "#2563eb";
+const LIGHT_BG = "#f0f4ff";
 const TEXT_DARK = "#111827";
 const TEXT_MED = "#374151";
 const TEXT_LIGHT = "#6b7280";
 const BORDER = "#e5e7eb";
-const ROW_ALT = "#f9fafb";
 
 const styles = StyleSheet.create({
   page: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   invoiceHeading: {
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
-    color: TEXT_DARK,
+    color: ACCENT,
     letterSpacing: 1,
   },
   invoiceNumberLabel: {
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   table: { marginBottom: 0 },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: NAVY,
+    backgroundColor: DARK_BLUE,
     paddingVertical: 7,
     paddingHorizontal: 8,
   },
@@ -176,10 +176,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  tableRowAlt: { backgroundColor: ROW_ALT },
+  tableRowAlt: { backgroundColor: LIGHT_BG },
+  tableAccentLine: {
+    height: 2,
+    backgroundColor: ACCENT,
+  },
   tableTotalRow: {
     flexDirection: "row",
-    backgroundColor: NAVY,
+    backgroundColor: DARK_BLUE,
     paddingVertical: 8,
     paddingHorizontal: 8,
   },
@@ -206,7 +210,11 @@ const styles = StyleSheet.create({
   bottomSection: {
     flexDirection: "row",
     marginTop: 20,
-    gap: 24,
+    backgroundColor: LIGHT_BG,
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    padding: 12,
+    gap: 16,
   },
   paymentBlock: { flex: 1 },
   notesBlock: { flex: 1 },
@@ -368,30 +376,37 @@ function InvoicePdfDocument({ invoice }: { invoice: InvoicePdfData }) {
             </View>
           </View>
 
-          {lineItems.map((li, i) => (
-            <View
-              key={i}
-              style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}
-            >
-              <View style={styles.colDate}>
-                <Text style={styles.tdText}>
-                  {li.date ? formatLineItemDate(li.date) : ""}
-                </Text>
+          {/* Data rows + empty padding rows (minimum 12 rows like reference) */}
+          {Array.from({ length: Math.max(lineItems.length, 12) }).map((_, i) => {
+            const li = lineItems[i];
+            return (
+              <View
+                key={i}
+                style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}
+              >
+                <View style={styles.colDate}>
+                  <Text style={styles.tdText}>
+                    {li?.date ? formatLineItemDate(li.date) : ""}
+                  </Text>
+                </View>
+                <View style={styles.colDescription}>
+                  <Text style={styles.tdText}>{li?.description ?? ""}</Text>
+                </View>
+                <View style={styles.colHours}>
+                  <Text style={styles.tdText}>{li ? li.hours.toFixed(2) : ""}</Text>
+                </View>
+                <View style={styles.colRate}>
+                  <Text style={styles.tdText}>{li ? pdfFormatAmount(li.rate, currency) : ""}</Text>
+                </View>
+                <View style={styles.colAmount}>
+                  <Text style={styles.tdBold}>{li ? pdfFormatAmount(li.amount, currency) : ""}</Text>
+                </View>
               </View>
-              <View style={styles.colDescription}>
-                <Text style={styles.tdText}>{li.description}</Text>
-              </View>
-              <View style={styles.colHours}>
-                <Text style={styles.tdText}>{li.hours.toFixed(2)}</Text>
-              </View>
-              <View style={styles.colRate}>
-                <Text style={styles.tdText}>{pdfFormatAmount(li.rate, currency)}</Text>
-              </View>
-              <View style={styles.colAmount}>
-                <Text style={styles.tdBold}>{pdfFormatAmount(li.amount, currency)}</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
+
+          {/* Accent line above total */}
+          <View style={styles.tableAccentLine} />
 
           {/* Total row */}
           <View style={styles.tableTotalRow}>

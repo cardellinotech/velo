@@ -74,6 +74,22 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
+function tsToDateStr(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function dateStrToTs(s: string): number {
+  return new Date(s + "T00:00:00").getTime();
+}
+
+function formatPeriodRange(start: number, end: number): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[s.getMonth()]} ${String(s.getDate()).padStart(2, "0")} – ${months[e.getMonth()]} ${String(e.getDate()).padStart(2, "0")}, ${e.getFullYear()}`;
+}
+
 interface InvoiceFormProps {
   invoice: InvoiceData;
 }
@@ -92,6 +108,9 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   const [clientName, setClientName] = useState(invoice.clientName);
   const [clientAddress, setClientAddress] = useState(invoice.clientAddress ?? "");
   const [notes, setNotes] = useState(invoice.notes ?? "");
+  const [periodStart, setPeriodStart] = useState(invoice.periodStart);
+  const [periodEnd, setPeriodEnd] = useState(invoice.periodEnd);
+  const [paymentTermDays, setPaymentTermDays] = useState(invoice.paymentTermDays ?? 14);
   const [lineItems, setLineItems] = useState<LineItem[]>(invoice.lineItems);
   const [isSaving, setIsSaving] = useState(false);
   const [isMarkingSent, setIsMarkingSent] = useState(false);
@@ -109,6 +128,9 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
     setClientName(invoice.clientName);
     setClientAddress(invoice.clientAddress ?? "");
     setNotes(invoice.notes ?? "");
+    setPeriodStart(invoice.periodStart);
+    setPeriodEnd(invoice.periodEnd);
+    setPaymentTermDays(invoice.paymentTermDays ?? 14);
     setLineItems(invoice.lineItems);
   }, [invoice._id]);
 
@@ -165,6 +187,9 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
         clientAddress: clientAddress || undefined,
         notes: notes || undefined,
         lineItems,
+        periodStart,
+        periodEnd,
+        paymentTermDays,
       });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save");
@@ -361,6 +386,68 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
         </div>
       </div>
 
+      {/* Period & Payment Term */}
+      <div className="rounded-xl border border-border/60 bg-white p-5">
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
+          Period &amp; Payment
+        </p>
+        {isDraft ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-primary">Period start</label>
+              <input
+                type="date"
+                value={tsToDateStr(periodStart)}
+                onChange={(e) => e.target.value && setPeriodStart(dateStrToTs(e.target.value))}
+                className="h-9 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-primary">Period end</label>
+              <input
+                type="date"
+                value={tsToDateStr(periodEnd)}
+                onChange={(e) => e.target.value && setPeriodEnd(dateStrToTs(e.target.value))}
+                className="h-9 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-primary">Payment term</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={paymentTermDays}
+                  onChange={(e) => setPaymentTermDays(Number(e.target.value) || 14)}
+                  className="h-9 w-full rounded-lg border border-border/60 bg-white px-3 pr-12 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted">
+                  days
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2">
+            <div>
+              <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">Period</p>
+              <p className="text-sm text-text-primary">
+                {formatPeriodRange(invoice.periodStart, invoice.periodEnd)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">Payment terms</p>
+              <p className="text-sm text-text-primary">{invoice.paymentTermDays ?? 30} days</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">Due date</p>
+              <p className="text-sm text-text-primary">{formatDate(invoice.dueDate)}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Line items */}
       <div className="overflow-x-auto -mx-4 sm:mx-0">
       <div className="rounded-xl border border-border/60 bg-white overflow-hidden min-w-[560px]">
@@ -505,7 +592,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
       </div>
 
       {/* Payment details */}
-      {(invoice.bankName || invoice.iban || invoice.bic || invoice.paymentTermDays) && (
+      {(invoice.bankName || invoice.iban || invoice.bic) && (
         <div className="rounded-xl border border-border/60 bg-white p-5">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-3">
             Payment details
@@ -527,12 +614,6 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
               <div>
                 <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">BIC</p>
                 <p className="text-sm font-mono text-text-primary">{invoice.bic}</p>
-              </div>
-            )}
-            {invoice.paymentTermDays !== undefined && (
-              <div>
-                <p className="text-[11px] text-text-muted uppercase tracking-wide mb-0.5">Payment terms</p>
-                <p className="text-sm text-text-primary">{invoice.paymentTermDays} days</p>
               </div>
             )}
           </div>

@@ -96,6 +96,7 @@ export const create = mutation({
     clientAddress: v.optional(v.string()),
     notes: v.optional(v.string()),
     lineItems: v.optional(v.array(lineItemValidator)),
+    paymentTermDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -123,7 +124,7 @@ export const create = mutation({
     );
 
     const issueDate = Date.now();
-    const paymentTermDays = settings?.paymentTermDays ?? 30;
+    const paymentTermDays = args.paymentTermDays ?? settings?.paymentTermDays ?? 30;
     const dueDate = issueDate + paymentTermDays * 24 * 60 * 60 * 1000;
 
     const now = Date.now();
@@ -185,6 +186,9 @@ export const update = mutation({
     lineItems: v.optional(v.array(lineItemValidator)),
     taxRate: v.optional(v.number()),
     dueDate: v.optional(v.number()),
+    periodStart: v.optional(v.number()),
+    periodEnd: v.optional(v.number()),
+    paymentTermDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -204,6 +208,12 @@ export const update = mutation({
       ? calcTotals(newLineItems, newTaxRate)
       : { subtotal: invoice.subtotal, taxAmount: invoice.taxAmount, total: invoice.total };
 
+    // Recalculate dueDate when paymentTermDays changes
+    const newDueDate =
+      fields.paymentTermDays !== undefined
+        ? invoice.issueDate + fields.paymentTermDays * 24 * 60 * 60 * 1000
+        : fields.dueDate;
+
     await ctx.db.patch(args.invoiceId, {
       updatedAt: Date.now(),
       ...(fields.clientAddress !== undefined ? { clientAddress: fields.clientAddress } : {}),
@@ -211,7 +221,10 @@ export const update = mutation({
       ...(fields.senderName !== undefined ? { senderName: fields.senderName } : {}),
       ...(fields.senderAddress !== undefined ? { senderAddress: fields.senderAddress } : {}),
       ...(fields.notes !== undefined ? { notes: fields.notes } : {}),
-      ...(fields.dueDate !== undefined ? { dueDate: fields.dueDate } : {}),
+      ...(newDueDate !== undefined ? { dueDate: newDueDate } : {}),
+      ...(fields.paymentTermDays !== undefined ? { paymentTermDays: fields.paymentTermDays } : {}),
+      ...(fields.periodStart !== undefined ? { periodStart: fields.periodStart } : {}),
+      ...(fields.periodEnd !== undefined ? { periodEnd: fields.periodEnd } : {}),
       ...(needsRecalc ? { lineItems: newLineItems, taxRate: newTaxRate, subtotal, taxAmount, total } : {}),
     });
   },

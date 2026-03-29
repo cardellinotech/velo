@@ -12,6 +12,7 @@ import type { BillingEntry } from "../../../convex/billing";
 import { FileText } from "lucide-react";
 
 interface LineItemPreview {
+  date?: number;
   description: string;
   hours: number;
   rate: number;
@@ -35,33 +36,44 @@ interface CreateInvoiceDialogProps {
   projects: ProjectOption[];
 }
 
-function groupEntriesByEpic(
+function groupEntriesByTask(
   entries: BillingEntry[],
   hourlyRate: number
 ): LineItemPreview[] {
-  const epicMap = new Map<string, { hours: number; epicName: string | null }>();
+  const taskMap = new Map<
+    string,
+    { hours: number; taskTitle: string; earliestDate: number }
+  >();
 
   for (const entry of entries) {
-    const key = entry.epicName ?? "__none__";
-    const existing = epicMap.get(key);
+    const key = entry.taskId;
     const hours = entry.durationMs / 3_600_000;
+    const existing = taskMap.get(key);
     if (existing) {
       existing.hours += hours;
+      existing.earliestDate = Math.min(existing.earliestDate, entry.startTime);
     } else {
-      epicMap.set(key, { hours, epicName: entry.epicName });
+      taskMap.set(key, {
+        hours,
+        taskTitle: entry.taskTitle,
+        earliestDate: entry.startTime,
+      });
     }
   }
 
-  return Array.from(epicMap.entries()).map(([, { hours, epicName }]) => {
-    const roundedHours = Math.round(hours * 100) / 100;
-    const amount = Math.round(roundedHours * hourlyRate * 100) / 100;
-    return {
-      description: epicName ?? "General",
-      hours: roundedHours,
-      rate: hourlyRate,
-      amount,
-    };
-  });
+  return Array.from(taskMap.values())
+    .sort((a, b) => a.earliestDate - b.earliestDate)
+    .map(({ hours, taskTitle, earliestDate }) => {
+      const roundedHours = Math.round(hours * 100) / 100;
+      const amount = Math.round(roundedHours * hourlyRate * 100) / 100;
+      return {
+        date: earliestDate,
+        description: taskTitle || "General",
+        hours: roundedHours,
+        rate: hourlyRate,
+        amount,
+      };
+    });
 }
 
 export function CreateInvoiceDialog({
@@ -95,7 +107,7 @@ export function CreateInvoiceDialog({
 
   const lineItems: LineItemPreview[] =
     selectedProject && hourlyRate > 0
-      ? groupEntriesByEpic(projectEntries, hourlyRate)
+      ? groupEntriesByTask(projectEntries, hourlyRate)
       : [];
 
   const subtotal = lineItems.reduce((s, li) => s + li.amount, 0);
