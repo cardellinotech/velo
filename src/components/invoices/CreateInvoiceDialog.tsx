@@ -98,10 +98,6 @@ export function CreateInvoiceDialog({
     ? entries.filter((e) => e.projectId === selectedProjectId)
     : [];
 
-  // Projects that actually have tracked time
-  const projectIdsWithTime = new Set(entries.map((e) => e.projectId));
-  const eligibleProjects = projects.filter((p) => projectIdsWithTime.has(p._id));
-
   const hourlyRate = selectedProject?.hourlyRate ?? 0;
   const currency = selectedProject?.currency ?? "EUR";
 
@@ -151,15 +147,12 @@ export function CreateInvoiceDialog({
             className="h-10 w-full rounded-lg border border-border/60 bg-white px-3.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
           >
             <option value="">Select a project…</option>
-            {eligibleProjects.map((p) => (
+            {projects.map((p) => (
               <option key={p._id} value={p._id}>
                 {p.name}{p.clientName ? ` — ${p.clientName}` : ""}
               </option>
             ))}
           </select>
-          {eligibleProjects.length === 0 && (
-            <p className="text-xs text-text-muted">No projects have tracked time in this period.</p>
-          )}
         </div>
 
         {/* Line items preview */}
