@@ -1,123 +1,101 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
-import { formatAmount } from "@/lib/currency";
-import type { BillingEntry } from "../../../convex/billing";
+import { getPresetRange } from "@/lib/dateRanges";
 import { FileText } from "lucide-react";
-
-interface LineItemPreview {
-  date?: number;
-  description: string;
-  hours: number;
-  rate: number;
-  amount: number;
-}
 
 interface ProjectOption {
   _id: Id<"projects">;
   name: string;
   clientName?: string;
   hourlyRate?: number;
-  currency?: string;
 }
 
 interface CreateInvoiceDialogProps {
   open: boolean;
   onClose: () => void;
-  entries: BillingEntry[];
-  periodStart: number;
-  periodEnd: number;
   projects: ProjectOption[];
 }
 
-function groupEntriesByTask(
-  entries: BillingEntry[],
-  hourlyRate: number
-): LineItemPreview[] {
-  const taskMap = new Map<
-    string,
-    { hours: number; taskTitle: string; earliestDate: number }
-  >();
-
-  for (const entry of entries) {
-    const key = entry.taskId;
-    const hours = entry.durationMs / 3_600_000;
-    const existing = taskMap.get(key);
-    if (existing) {
-      existing.hours += hours;
-      existing.earliestDate = Math.min(existing.earliestDate, entry.startTime);
-    } else {
-      taskMap.set(key, {
-        hours,
-        taskTitle: entry.taskTitle,
-        earliestDate: entry.startTime,
-      });
-    }
-  }
-
-  return Array.from(taskMap.values())
-    .sort((a, b) => a.earliestDate - b.earliestDate)
-    .map(({ hours, taskTitle, earliestDate }) => {
-      const roundedHours = Math.round(hours * 100) / 100;
-      const amount = Math.round(roundedHours * hourlyRate * 100) / 100;
-      return {
-        date: earliestDate,
-        description: taskTitle || "General",
-        hours: roundedHours,
-        rate: hourlyRate,
-        amount,
-      };
-    });
+function tsToDateStr(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+function dateStrToTs(s: string): number {
+  return new Date(s + "T00:00:00").getTime();
+}
+
+const defaultRange = getPresetRange("this_month");
 
 export function CreateInvoiceDialog({
   open,
   onClose,
-  entries,
-  periodStart,
-  periodEnd,
   projects,
 }: CreateInvoiceDialogProps) {
   const router = useRouter();
   const createInvoice = useMutation(api.invoices.create);
 
   const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | "">("");
+  const [periodStart, setPeriodStart] = useState(defaultRange.startDate);
+  const [periodEnd, setPeriodEnd] = useState(defaultRange.endDate);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectedProject = projects.find((p) => p._id === selectedProjectId);
 
-  // Filter entries for selected project that have time tracked
-  const projectEntries = selectedProjectId
-    ? entries.filter((e) => e.projectId === selectedProjectId)
-    : [];
-
-  const hourlyRate = selectedProject?.hourlyRate ?? 0;
-  const currency = selectedProject?.currency ?? "EUR";
-
-  const lineItems: LineItemPreview[] =
-    selectedProject && hourlyRate > 0
-      ? groupEntriesByTask(projectEntries, hourlyRate)
-      : [];
-
-  const subtotal = lineItems.reduce((s, li) => s + li.amount, 0);
+  const entries = useQuery(
+    api.billing.entries,
+    selectedProjectId
+      ? { startDate: periodStart, endDate: periodEnd, projectId: selectedProjectId as Id<"projects"> }
+      : "skip"
+  );
 
   async function handleCreate() {
     if (!selectedProjectId) return;
     setIsSubmitting(true);
     setError(null);
     try {
+      const hourlyRate = selectedProject?.hourlyRate ?? 0;
+      let lineItems: { date?: number; description: string; hours: number; rate: number; amount: number }[] | undefined;
+
+      if (hourlyRate > 0 && entries && entries.length > 0) {
+        const taskMap = new Map<string, { hours: number; taskTitle: string; earliestDate: number }>();
+        for (const entry of entries) {
+          const hours = entry.durationMs / 3_600_000;
+          const existing = taskMap.get(entry.taskId);
+          if (existing) {
+            existing.hours += hours;
+            existing.earliestDate = Math.min(existing.earliestDate, entry.startTime);
+          } else {
+            taskMap.set(entry.taskId, { hours, taskTitle: entry.taskTitle, earliestDate: entry.startTime });
+          }
+        }
+        lineItems = Array.from(taskMap.values())
+          .sort((a, b) => a.earliestDate - b.earliestDate)
+          .map(({ hours, taskTitle, earliestDate }) => {
+            const roundedHours = Math.round(hours * 100) / 100;
+            return {
+              date: earliestDate,
+              description: taskTitle || "General",
+              hours: roundedHours,
+              rate: hourlyRate,
+              amount: Math.round(roundedHours * hourlyRate * 100) / 100,
+            };
+          });
+      }
+
       const invoiceId = await createInvoice({
         projectId: selectedProjectId as Id<"projects">,
         periodStart,
         periodEnd,
-        lineItems: lineItems.length > 0 ? lineItems : undefined,
+        lineItems: lineItems && lineItems.length > 0 ? lineItems : undefined,
       });
       onClose();
       router.push(`/invoices/${invoiceId}`);
@@ -134,9 +112,8 @@ export function CreateInvoiceDialog({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} title="Create Invoice" className="max-w-lg">
+    <Dialog open={open} onClose={handleClose} title="Create Invoice" className="max-w-sm">
       <div className="flex flex-col gap-5">
-        {/* Project selector */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-text-primary">
             Project <span className="text-error">*</span>
@@ -155,83 +132,31 @@ export function CreateInvoiceDialog({
           </select>
         </div>
 
-        {/* Line items preview */}
-        {selectedProject && (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-text-primary uppercase tracking-wide">
-                Line items preview
-              </p>
-              {!selectedProject.hourlyRate && (
-                <span className="text-xs text-warning bg-warning-bg px-2 py-0.5 rounded-md">
-                  No hourly rate set
-                </span>
-              )}
-            </div>
-
-            {lineItems.length > 0 ? (
-              <div className="rounded-xl border border-border/60 overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-surface border-b border-border/40">
-                      <th className="px-3 py-2.5 text-left font-medium text-text-secondary">Description</th>
-                      <th className="px-3 py-2.5 text-right font-medium text-text-secondary">Hours</th>
-                      <th className="px-3 py-2.5 text-right font-medium text-text-secondary">Rate</th>
-                      <th className="px-3 py-2.5 text-right font-medium text-text-secondary">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.map((li, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-border/30 last:border-0 hover:bg-surface/50"
-                      >
-                        <td className="px-3 py-2.5 text-text-primary">{li.description}</td>
-                        <td className="px-3 py-2.5 text-right text-text-secondary font-mono">
-                          {li.hours.toFixed(2)}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-text-secondary font-mono">
-                          {formatAmount(li.rate, currency)}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-text-primary font-semibold font-mono">
-                          {formatAmount(li.amount, currency)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-surface border-t border-border/60">
-                      <td colSpan={3} className="px-3 py-2.5 text-right text-xs font-semibold text-text-primary">
-                        Subtotal
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-sm font-bold text-text-primary font-mono">
-                        {formatAmount(subtotal, currency)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2 rounded-xl border border-border/60 bg-surface py-8">
-                <FileText className="w-8 h-8 text-text-muted" />
-                <p className="text-sm text-text-secondary text-center">
-                  {selectedProject.hourlyRate
-                    ? "No tracked time for this project in the selected period."
-                    : "Set an hourly rate on this project to auto-generate line items."}
-                </p>
-                <p className="text-xs text-text-muted">
-                  You can add line items manually after creating the invoice.
-                </p>
-              </div>
-            )}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-primary">Period start</label>
+            <input
+              type="date"
+              value={tsToDateStr(periodStart)}
+              onChange={(e) => e.target.value && setPeriodStart(dateStrToTs(e.target.value))}
+              className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
+            />
           </div>
-        )}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-text-primary">Period end</label>
+            <input
+              type="date"
+              value={tsToDateStr(periodEnd)}
+              onChange={(e) => e.target.value && setPeriodEnd(dateStrToTs(e.target.value))}
+              className="h-10 w-full rounded-lg border border-border/60 bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
+            />
+          </div>
+        </div>
 
         {error && (
           <p className="text-xs text-error bg-error-bg px-3 py-2 rounded-lg">{error}</p>
         )}
 
-        {/* Actions */}
         <div className="flex items-center justify-end gap-2 pt-1">
           <Button variant="secondary" size="md" onClick={handleClose} disabled={isSubmitting}>
             Cancel

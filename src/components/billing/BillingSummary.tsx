@@ -244,13 +244,10 @@ export function BillingSummary() {
         )}
       </div>
 
-      {entriesData && projects && (
+      {projects && (
         <CreateInvoiceDialog
           open={createInvoiceOpen}
           onClose={() => setCreateInvoiceOpen(false)}
-          entries={entriesData}
-          periodStart={dateRange.startDate}
-          periodEnd={dateRange.endDate}
           projects={projects}
         />
       )}
