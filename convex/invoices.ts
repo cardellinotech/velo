@@ -85,77 +85,102 @@ export const get = query({
 
     const project = await ctx.db.get(invoice.projectId);
 
-    // For draft invoices, dynamically compute line items from time entries
-    // so the invoice stays in sync as time entries are added/edited/deleted.
-    if (invoice.status === "draft" && project?.hourlyRate) {
-      const timeEntries = await ctx.db
-        .query("timeEntries")
-        .withIndex("by_userId_startTime", (q) =>
-          q
-            .eq("userId", userId)
-            .gte("startTime", invoice.periodStart)
-            .lte("startTime", invoice.periodEnd)
-        )
-        .order("asc")
-        .take(500);
+    if (invoice.status !== "draft") {
+      return { ...invoice, projectName: project?.name ?? null };
+    }
 
-      const completed = timeEntries.filter(
-        (e) => e.endTime !== undefined && e.projectId === invoice.projectId
-      );
+    // Draft invoices: always reflect current settings (IBAN, BIC, sender details, etc.)
+    // and dynamically compute line items from time entries.
+    const settings = await ctx.db
+      .query("userSettings")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
 
-      const taskIds = [...new Set(completed.map((e) => e.taskId))];
-      const taskMap = new Map<Id<"tasks">, string>();
-      for (const taskId of taskIds) {
-        const task = await ctx.db.get(taskId);
-        if (task) taskMap.set(taskId, task.title);
-      }
+    const settingsOverrides = {
+      senderName: invoice.senderName || settings?.businessName || "",
+      senderAddress: invoice.senderAddress ?? settings?.businessAddress,
+      vatId: settings?.vatId,
+      taxRate: settings?.taxRate,
+      bankName: settings?.bankName,
+      iban: settings?.iban,
+      bic: settings?.bic,
+      paymentTermDays: invoice.paymentTermDays ?? settings?.paymentTermDays,
+    };
 
-      const grouped = new Map<
-        string,
-        { hours: number; title: string; earliestDate: number }
-      >();
-      for (const e of completed) {
-        const hours = (e.duration ?? 0) / 3_600_000;
-        const existing = grouped.get(e.taskId);
-        if (existing) {
-          existing.hours += hours;
-          existing.earliestDate = Math.min(existing.earliestDate, e.startTime);
-        } else {
-          grouped.set(e.taskId, {
-            hours,
-            title: taskMap.get(e.taskId) ?? "General",
-            earliestDate: e.startTime,
-          });
-        }
-      }
-
-      const hourlyRate = project.hourlyRate;
-      const lineItems = Array.from(grouped.values())
-        .sort((a, b) => a.earliestDate - b.earliestDate)
-        .map(({ hours, title, earliestDate }) => {
-          const roundedHours = Math.round(hours * 100) / 100;
-          return {
-            date: earliestDate,
-            description: title,
-            hours: roundedHours,
-            rate: hourlyRate,
-            amount: Math.round(roundedHours * hourlyRate * 100) / 100,
-          };
-        });
-
-      const { subtotal, taxAmount, total } = calcTotals(lineItems, invoice.taxRate);
-
+    if (!project?.hourlyRate) {
       return {
         ...invoice,
-        lineItems,
-        subtotal,
-        taxAmount,
-        total,
-        projectName: project.name,
+        ...settingsOverrides,
+        projectName: project?.name ?? null,
       };
     }
 
-    return { ...invoice, projectName: project?.name ?? null };
+    const timeEntries = await ctx.db
+      .query("timeEntries")
+      .withIndex("by_userId_startTime", (q) =>
+        q
+          .eq("userId", userId)
+          .gte("startTime", invoice.periodStart)
+          .lte("startTime", invoice.periodEnd)
+      )
+      .order("asc")
+      .take(500);
+
+    const completed = timeEntries.filter(
+      (e) => e.endTime !== undefined && e.projectId === invoice.projectId
+    );
+
+    const taskIds = [...new Set(completed.map((e) => e.taskId))];
+    const taskMap = new Map<Id<"tasks">, string>();
+    for (const taskId of taskIds) {
+      const task = await ctx.db.get(taskId);
+      if (task) taskMap.set(taskId, task.title);
+    }
+
+    const grouped = new Map<
+      string,
+      { hours: number; title: string; earliestDate: number }
+    >();
+    for (const e of completed) {
+      const hours = (e.duration ?? 0) / 3_600_000;
+      const existing = grouped.get(e.taskId);
+      if (existing) {
+        existing.hours += hours;
+        existing.earliestDate = Math.min(existing.earliestDate, e.startTime);
+      } else {
+        grouped.set(e.taskId, {
+          hours,
+          title: taskMap.get(e.taskId) ?? "General",
+          earliestDate: e.startTime,
+        });
+      }
+    }
+
+    const hourlyRate = project.hourlyRate;
+    const lineItems = Array.from(grouped.values())
+      .sort((a, b) => a.earliestDate - b.earliestDate)
+      .map(({ hours, title, earliestDate }) => {
+        const roundedHours = Math.round(hours * 100) / 100;
+        return {
+          date: earliestDate,
+          description: title,
+          hours: roundedHours,
+          rate: hourlyRate,
+          amount: Math.round(roundedHours * hourlyRate * 100) / 100,
+        };
+      });
+
+    const { subtotal, taxAmount, total } = calcTotals(lineItems, settingsOverrides.taxRate);
+
+    return {
+      ...invoice,
+      ...settingsOverrides,
+      lineItems,
+      subtotal,
+      taxAmount,
+      total,
+      projectName: project.name,
+    };
   },
 });
 
