@@ -10,7 +10,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { formatAmount } from "@/lib/currency";
 import { formatDate } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
-import { Plus, X, ArrowLeft, ChevronRight, FileDown } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileDown } from "lucide-react";
 import Link from "next/link";
 import { exportInvoicePdf } from "@/components/invoices/InvoicePdfExport";
 
@@ -111,7 +111,6 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   const [periodStart, setPeriodStart] = useState(invoice.periodStart);
   const [periodEnd, setPeriodEnd] = useState(invoice.periodEnd);
   const [paymentTermDays, setPaymentTermDays] = useState(invoice.paymentTermDays ?? 14);
-  const [lineItems, setLineItems] = useState<LineItem[]>(invoice.lineItems);
   const [isSaving, setIsSaving] = useState(false);
   const [isMarkingSent, setIsMarkingSent] = useState(false);
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
@@ -131,49 +130,12 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
     setPeriodStart(invoice.periodStart);
     setPeriodEnd(invoice.periodEnd);
     setPaymentTermDays(invoice.paymentTermDays ?? 14);
-    setLineItems(invoice.lineItems);
   }, [invoice._id]);
 
   const currency = invoice.currency;
-
-  function calcAmount(hours: number, rate: number) {
-    return Math.round(hours * rate * 100) / 100;
-  }
-
-  function updateLineItem(index: number, field: keyof LineItem, value: string | number) {
-    setLineItems((prev) => {
-      const updated = [...prev];
-      const item = { ...updated[index] };
-      if (field === "date") {
-        item.date = value === 0 ? undefined : Number(value);
-      } else {
-        (item as Record<string, unknown>)[field] = value;
-        if (field === "hours" || field === "rate") {
-          item.amount = calcAmount(
-            field === "hours" ? Number(value) : item.hours,
-            field === "rate" ? Number(value) : item.rate
-          );
-        }
-      }
-      updated[index] = item;
-      return updated;
-    });
-  }
-
-  function addLineItem() {
-    setLineItems((prev) => [
-      ...prev,
-      { description: "", hours: 0, rate: invoice.lineItems[0]?.rate ?? 0, amount: 0 },
-    ]);
-  }
-
-  function removeLineItem(index: number) {
-    setLineItems((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  const subtotal = lineItems.reduce((s, li) => s + li.amount, 0);
-  const taxAmount = invoice.taxRate ? subtotal * (invoice.taxRate / 100) : undefined;
-  const total = subtotal + (taxAmount ?? 0);
+  const subtotal = invoice.subtotal;
+  const taxAmount = invoice.taxAmount;
+  const total = invoice.total;
 
   async function handleSave() {
     setIsSaving(true);
@@ -186,7 +148,6 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
         clientName,
         clientAddress: clientAddress || undefined,
         notes: notes || undefined,
-        lineItems,
         periodStart,
         periodEnd,
         paymentTermDays,
@@ -464,106 +425,35 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
                 Rate ({currency})
               </th>
               <th className="px-4 py-2.5 text-right text-xs font-medium text-text-secondary w-28">Amount</th>
-              {isDraft && <th className="px-3 py-2.5 w-10" />}
             </tr>
           </thead>
           <tbody>
-            {lineItems.map((li, i) => (
-              <tr key={i} className="border-b border-border/20 last:border-0 group">
-                {isDraft ? (
-                  <>
-                    <td className="px-4 py-2.5">
-                      <input
-                        type="date"
-                        value={li.date ? new Date(li.date).toISOString().split("T")[0] : ""}
-                        onChange={(e) => {
-                          const ts = e.target.valueAsNumber;
-                          updateLineItem(i, "date", isNaN(ts) ? 0 : ts);
-                        }}
-                        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all duration-150 hover:bg-surface"
-                      />
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <input
-                        value={li.description}
-                        onChange={(e) => updateLineItem(i, "description", e.target.value)}
-                        placeholder="Description"
-                        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all duration-150 hover:bg-surface"
-                      />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={li.hours}
-                        onChange={(e) => updateLineItem(i, "hours", parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm text-right font-mono text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all duration-150 hover:bg-surface"
-                      />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={li.rate}
-                        onChange={(e) => updateLineItem(i, "rate", parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm text-right font-mono text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all duration-150 hover:bg-surface"
-                      />
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-sm text-text-primary font-semibold">
-                      {formatAmount(li.amount, currency)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <button
-                        onClick={() => removeLineItem(i)}
-                        className="flex items-center justify-center w-6 h-6 rounded-md text-text-muted opacity-0 group-hover:opacity-100 hover:bg-error/10 hover:text-error transition-all duration-150"
-                        aria-label="Remove line item"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-4 py-3 text-sm text-text-secondary font-mono">
-                      {li.date ? new Date(li.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-text-primary">{li.description}</td>
-                    <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
-                      {li.hours.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
-                      {formatAmount(li.rate, currency)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-sm text-text-primary font-semibold">
-                      {formatAmount(li.amount, currency)}
-                    </td>
-                  </>
-                )}
+            {invoice.lineItems.map((li, i) => (
+              <tr key={i} className="border-b border-border/20 last:border-0">
+                <td className="px-4 py-3 text-sm text-text-secondary font-mono">
+                  {li.date ? new Date(li.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
+                </td>
+                <td className="px-5 py-3 text-sm text-text-primary">{li.description}</td>
+                <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
+                  {li.hours.toFixed(2)}
+                </td>
+                <td className="px-4 py-3 text-right font-mono text-sm text-text-secondary">
+                  {formatAmount(li.rate, currency)}
+                </td>
+                <td className="px-4 py-3 text-right font-mono text-sm text-text-primary font-semibold">
+                  {formatAmount(li.amount, currency)}
+                </td>
               </tr>
             ))}
-            {lineItems.length === 0 && (
+            {invoice.lineItems.length === 0 && (
               <tr>
-                <td colSpan={isDraft ? 6 : 5} className="px-5 py-8 text-center text-sm text-text-muted">
-                  No line items yet.{isDraft ? " Add one below." : ""}
+                <td colSpan={5} className="px-5 py-8 text-center text-sm text-text-muted">
+                  No time entries found for this period.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-
-        {isDraft && (
-          <div className="px-5 py-3 border-t border-border/30">
-            <button
-              onClick={addLineItem}
-              className="flex items-center gap-2 text-xs font-medium text-primary hover:text-primary-hover transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add line
-            </button>
-          </div>
-        )}
 
         {/* Totals */}
         <div className="border-t border-border/50 bg-surface">
