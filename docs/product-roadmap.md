@@ -518,6 +518,56 @@
 
 ---
 
+## Phase 10: Daily Planning (My Day)
+
+**Goal:** Add a dedicated "My Day" page where users can plan their workday — pulling in existing tasks from any project and adding free-text notes. Items are reorderable via drag & drop and can be checked off. Carry-over functionality lets unfinished items move to the next day. At the end of this phase, Velo supports end-of-day planning for the next morning.
+
+**Reference sections:** PRD §3 (Data Model — dailyPlanItems), PRD §4 (API — Daily Plan), PRD §6 (FR-027 through FR-030), PRD §8 (UI/UX — My Day), PRD §12 (Daily Plan Edge Cases)
+
+**Agent prompt:** "Add a Daily Planning feature ('My Day') to Velo. (1) Add `dailyPlanItems` table to Convex schema with fields: userId, date (YYYY-MM-DD string), taskId (optional link to existing task), title, projectName (optional, denormalized), isCompleted, order, createdAt. Index by userId+date. (2) Implement queries and mutations: get items by date, add task (with duplicate check), add free-text item, toggle complete, reorder (drag & drop), remove item, copy incomplete items to another date (carry-over). (3) Build the My Day page at /my-day — date navigation header with prev/next/today buttons, ordered list with drag & drop (@hello-pangea/dnd), checkbox per item, project badge on linked tasks, free-text quick-add input, 'Add Task' button that opens a task picker dialog. (4) Build TaskPickerDialog — search input filtering all active tasks (not done), shows task title + project name + type badge, click to add. Prevent duplicates for the same date. (5) Add 'My Day' link to sidebar navigation (Calendar icon from Lucide). (6) Handle edge cases: duplicate prevention, deleted linked tasks, task completed on Kanban auto-completes plan item, carry-over skips duplicates. Read convex/_generated/ai/guidelines.md and PRD §12 Daily Plan Edge Cases carefully."
+
+- [ ] **TASK-103** — Add dailyPlanItems table to Convex schema
+  Files: `convex/schema.ts`
+  Notes: Add `dailyPlanItems` table with fields: userId (Id<"users">), date (string, "YYYY-MM-DD"), taskId (optional Id<"tasks">), title (string), projectName (optional string), isCompleted (boolean), order (number), createdAt (number). Index: `by_userId_date` on ["userId", "date"]. Read `convex/_generated/ai/guidelines.md` first.
+
+- [ ] **TASK-104** — Implement daily plan queries and mutations
+  Files: `convex/dailyPlan.ts`
+  Notes: Query: `get` (userId + date, sorted by order). Mutations: `addTask` (looks up task title + project name, checks for duplicates on same date, appends with order = max+1), `addFreeText` (title only, no taskId), `toggleComplete` (flip isCompleted boolean), `reorder` (update order field), `remove` (delete item, does NOT delete linked task), `copyToDate` (copy incomplete items from fromDate to toDate, skip items where taskId already exists on toDate). All auth-gated.
+
+- [ ] **TASK-105** — Build My Day page with date navigation
+  Files: `src/app/(dashboard)/my-day/page.tsx`
+  Notes: Date header: formatted like "Monday, April 6, 2026" with left/right arrows for prev/next day and a "Today" pill button. Default to today's date. URL stays at /my-day (date managed via state, not route param). Use `date-fns` for date formatting and navigation. Page has max-width-lg, centered.
+
+- [ ] **TASK-106** — Build daily plan items list with drag & drop
+  Files: `src/components/daily-plan/DailyPlanList.tsx`
+  Notes: Ordered list using @hello-pangea/dnd (same library as Kanban). Each item: drag handle (GripVertical icon), checkbox, title text, project badge (small pill with project name if linked to task), task type colored dot (if linked). Checked items: strikethrough, muted opacity, sorted to bottom. On drag end: call `reorder` mutation. Empty state: "Nothing planned for this day. Add tasks or notes to get started."
+
+- [ ] **TASK-107** — Build free-text quick-add input
+  Files: `src/components/daily-plan/DailyPlanList.tsx` (or `QuickAddInput.tsx`)
+  Notes: Input at the top or bottom of the list: placeholder "+ Add a note..." with Enter to submit. Calls `addFreeText` mutation. Clear input after adding. Focus stays in input for rapid entry.
+
+- [ ] **TASK-108** — Build TaskPickerDialog
+  Files: `src/components/daily-plan/TaskPickerDialog.tsx`
+  Notes: Dialog opened by "Add Task" button. Contains a search input at top. Queries all user tasks where status != "done" from all active projects. Filter results by search term (case-insensitive match on title). Each result row: task title, project name badge, task type dot. Click a task → calls `addTask` mutation → shows toast "Added to plan" → dialog stays open for multi-add. Already-added tasks shown as disabled/grayed. Close button.
+
+- [ ] **TASK-109** — Add "My Day" to sidebar navigation
+  Files: `src/components/layout/Sidebar.tsx`
+  Notes: Add "My Day" nav item with Calendar icon (from Lucide) between Dashboard and Projects. Active state styling same as other nav items. On mobile: same hamburger menu treatment as other links.
+
+- [ ] **TASK-110** — Implement carry-over functionality
+  Files: `src/components/daily-plan/DailyPlanList.tsx`, `convex/dailyPlan.ts`
+  Notes: When viewing a past date with incomplete items, show a "Carry over to today" button (or to tomorrow if viewing today). Calls `copyToDate` mutation. After carry-over, show toast: "X items carried over." Button disappears after use or when no incomplete items remain.
+
+- [ ] **TASK-111** — Handle edge cases and reactive updates
+  Files: `convex/dailyPlan.ts`, `src/components/daily-plan/DailyPlanList.tsx`
+  Notes: If a linked task is deleted (via Kanban), the plan item should either auto-remove or show "(deleted task)" with strikethrough. If a linked task moves to "done" on the Kanban board, the plan item should reactively show as completed (query joins with tasks table to check status). When a plan item is checked and it has a taskId, show a toast offering to move the task to "done" status (with undo). Duplicate prevention: addTask mutation checks if taskId already exists for the date.
+
+- [ ] **TASK-112** — Final integration test and polish
+  Files: All new files
+  Notes: End-to-end test: navigate to My Day → add free-text items → add tasks via picker → reorder via drag → check items off → navigate to tomorrow → carry over incomplete items → verify items appear → go to Kanban, complete a linked task → verify My Day shows it as done. Visual polish: consistent with existing design system, proper spacing, responsive on mobile. Run `npx tsc --noEmit` to verify no TypeScript errors.
+
+---
+
 ## Agent Session Guide
 
 ### How to Structure Coding Sessions
@@ -543,8 +593,9 @@ Each phase is designed to be completed in 1–3 coding sessions. Here's how to a
 - **Phase 7:** 4–6 sessions (multi-currency + invoice generation + PDF export + business settings)
 - **Phase 8:** 2–3 sessions (recurring task templates + cron job + management UI)
 - **Phase 9:** 2–3 sessions (full responsive/mobile optimization across all pages)
+- **Phase 10:** 2–3 sessions (daily plan schema + UI + drag & drop + task picker + carry-over)
 
-**Total estimated sessions: 19–30**
+**Total estimated sessions: 21–33**
 
 ### When You Hit a Problem
 

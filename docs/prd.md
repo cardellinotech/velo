@@ -323,6 +323,20 @@ Managed by Convex Auth. Stores authenticated user data.
 
 Each instance created by a template is a normal `tasks` row with an added `recurringTemplateId` field linking back to its template.
 
+#### dailyPlanItems
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"dailyPlanItems"> | Auto-generated |
+| userId | Id<"users"> | Owner |
+| date | string | Plan date in "YYYY-MM-DD" format (the day being planned) |
+| taskId | Id<"tasks">? | Link to existing task (null for free-text items) |
+| title | string | Display title — task title (synced) or free-text |
+| projectName | string? | Denormalized project name (for display on linked tasks) |
+| isCompleted | boolean | Whether the item is done |
+| order | number | Sort order within the day (drag to reorder) |
+| createdAt | number | Timestamp |
+
 ### Relationships
 
 ```mermaid
@@ -338,6 +352,8 @@ erDiagram
     users ||--o{ timeEntries : creates
     users ||--o{ invoices : creates
     recurringTaskTemplates ||--o{ tasks : "generates"
+    users ||--o{ dailyPlanItems : "plans"
+    tasks ||--o{ dailyPlanItems : "optionally linked"
 ```
 
 ### Indexes
@@ -375,6 +391,9 @@ recurringTaskTemplates: defineTable({...})
   .index("by_projectId", ["projectId"])
   .index("by_userId_isActive", ["userId", "isActive"])
   .index("by_nextDueDate", ["nextDueDate"]),
+
+dailyPlanItems: defineTable({...})
+  .index("by_userId_date", ["userId", "date"]),
 
 // Updated tasks table — added recurringTemplateId
 tasks: defineTable({...})
@@ -500,6 +519,20 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | `recurringTasks.delete` | { templateId } | Delete template. Existing task instances remain. |
 | `recurringTasks.createInstance` | { templateId } | Internal — creates a task instance from template. Called by cron job. Advances nextDueDate. |
 
+#### Daily Plan
+| Query | Args | Returns | Auth |
+|-------|------|---------|------|
+| `dailyPlan.get` | { date } | DailyPlanItem[] for date, sorted by order | Required |
+
+| Mutation | Args | Effect |
+|----------|------|--------|
+| `dailyPlan.addTask` | { date, taskId } | Add existing task to day plan. Copies title + project name. Appends at end. |
+| `dailyPlan.addFreeText` | { date, title } | Add free-text item to day plan. Appends at end. |
+| `dailyPlan.toggleComplete` | { itemId } | Toggle isCompleted. If linked to a task, optionally move task to "done" when checked. |
+| `dailyPlan.reorder` | { itemId, order } | Update sort order (after drag & drop). |
+| `dailyPlan.remove` | { itemId } | Remove item from day plan. Does NOT delete the linked task. |
+| `dailyPlan.copyToDate` | { fromDate, toDate } | Copy all incomplete items from one date to another (e.g. roll over unfinished work). |
+
 ---
 
 ## 5. User Stories
@@ -560,6 +593,10 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 - **As a** freelancer on the go, **I want to** use Velo on my phone to check tasks, start/stop timers, and view my dashboard, **so that** I can track my work even when I'm away from my desk.
 - **Acceptance criteria:** All pages render correctly on mobile screens (320px+). Sidebar collapses to hamburger menu. Kanban board scrolls horizontally. Forms and dialogs are touch-friendly. Timer controls work on mobile. No horizontal overflow on any page.
 
+### US-016: Daily Planning
+- **As a** freelancer, **I want to** plan my next workday by picking tasks and adding notes, **so that** I start each day knowing exactly what to focus on and in what order.
+- **Acceptance criteria:** Dedicated "My Day" page. Can add existing project tasks via search or picker. Can add free-text items. Drag to reorder. Check items off. Navigate between dates. Carry over incomplete items to the next day.
+
 ### US-015: Authentication
 - **As a** user, **I want to** securely log in, **so that** my data is protected.
 - **Acceptance criteria:** Can sign up and log in via Convex Auth. Unauthenticated users are redirected to login. All data is scoped to the authenticated user.
@@ -598,6 +635,10 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | FR-024 | Mobile Kanban board | P1 | Kanban board works on mobile | Horizontal scrollable columns on mobile, same as desktop but with snap scrolling. Task cards full-width within columns. Drag & drop works with touch. |
 | FR-025 | Mobile navigation | P1 | Navigation accessible on mobile | Sidebar hidden by default on mobile, toggled via hamburger icon in header. Overlay sidebar with backdrop. Active timer bar always visible in header. Create button remains in header. |
 | FR-026 | Mobile-optimized forms | P1 | All dialogs and forms usable on mobile | Dialogs become full-screen or bottom-sheet on mobile. Form inputs use appropriate mobile keyboard types (email, number). Adequate spacing between inputs for touch. |
+| FR-027 | Daily plan page | P1 | Dedicated "My Day" page for daily planning | Page at /my-day with date navigation (prev/today/next). Ordered list of plan items. Add task via search/picker or free-text input. Drag to reorder. Check items as complete. "My Day" link in sidebar navigation. |
+| FR-028 | Task picker for daily plan | P1 | Add existing tasks to daily plan | Search across all active project tasks (not done). Shows task title, project name, task type badge. Prevents adding duplicates for same date. |
+| FR-029 | Free-text plan items | P1 | Add notes/reminders to daily plan | Quick-add input at top/bottom of plan. No project link needed. Useful for meetings, calls, admin tasks. |
+| FR-030 | Daily plan carry-over | P2 | Roll incomplete items to next day | "Carry over" button copies all unchecked items to the next day. Useful for unfinished work. |
 
 ---
 
@@ -719,6 +760,22 @@ All data access happens through Convex queries (reads) and mutations (writes). N
   - Sent: read-only with "Mark as Paid" button
   - Paid: read-only with green status
   - Overdue: read-only with red status indicator
+
+### Screen: My Day (Daily Planning)
+- **Path:** `/my-day`
+- **Layout:** Sidebar + main content (max-width-lg, centered)
+- **Elements:**
+  - Date header with prev/next arrows and "Today" button. Shows date formatted as "Monday, April 6, 2026".
+  - Add section: quick free-text input ("+ Add a note...") and "Add Task" button that opens task picker dialog.
+  - Plan items list (drag-to-reorder via @hello-pangea/dnd):
+    - Each item: checkbox, title, project badge (if linked to task), task type dot (if linked), drag handle.
+    - Checked items: strikethrough + muted text, moved to bottom.
+  - "Carry over" button: appears when viewing a past date with incomplete items, copies them to today.
+  - Task picker dialog: search input that filters across all active project tasks (status != "done"). Shows task title, project name, type badge. Click to add to plan.
+- **States:**
+  - Loading: skeleton list
+  - Empty: "Nothing planned for this day. Add tasks or notes to get started." with illustration.
+  - All complete: "All done! 🎯" celebration text.
 
 ### Screen: Business Settings
 - **Path:** `/settings`
@@ -866,6 +923,18 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 | Delete template | Template deleted. Already-created task instances remain (they're normal tasks). Tasks keep the recurringTemplateId but template query returns null — show "(deleted template)" indicator. |
 | Cron job runs while Convex is deploying | Convex cron jobs are reliable and run after deployment completes. No special handling needed. |
 
+### Daily Plan Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| Add same task twice for same date | Prevent duplicate — show toast: "Task already in today's plan." |
+| Linked task gets deleted | Remove the plan item or show it as "(deleted task)" with strikethrough. |
+| Linked task moved to "done" on Kanban | Plan item auto-marks as completed (reactive via Convex query). |
+| Plan item checked → linked task | Optionally move the linked task to "done" status. Show a toast with undo option. |
+| No items for a date | Empty state: "Nothing planned for this day. Add tasks or notes to get started." |
+| Carry over when target date already has items | Append carried-over items after existing items. Skip items that already exist on the target date. |
+| Very old dates | Allow viewing/editing any past date. No restrictions — useful for reviewing what was planned. |
+
 ### General Error Handling
 
 | Error | UI Response |
@@ -914,7 +983,7 @@ No GitHub, Slack, email, or third-party tool integrations. Velo is standalone.
 The following are explicitly NOT included in this PRD and should not be built in the MVP:
 
 - Multi-user / team features (invitations, roles, permissions)
-- Sprint planning, velocity tracking, burndown charts
+- ~~Sprint planning, velocity tracking, burndown charts~~ **Daily Planning added in Phase 10** (lightweight day planning, not full sprint management)
 - Gantt charts or timeline views
 - Email notifications or in-app notifications
 - ~~Mobile app or PWA~~ **Responsive Web added in Phase 9** (no native app, but full mobile browser support)

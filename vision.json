@@ -30,7 +30,8 @@
       "Geschäftsdaten-Verwaltung (Firmenname, Adresse, USt-ID, Bankverbindung)",
       "Rechnungs-Lifecycle: Entwurf → Versendet → Bezahlt → Überfällig",
       "Recurring Tasks: Wiederkehrende Aufgaben mit flexiblen Intervallen (täglich/wöchentlich/monatlich), automatische Erstellung als eigenständige Task-Instanzen",
-      "Vollständig responsive Web-App: Alle Seiten und Funktionen auf Mobile nutzbar, Kanban Board horizontal scrollbar, mobile-optimierte Navigation mit Hamburger-Menü"
+      "Vollständig responsive Web-App: Alle Seiten und Funktionen auf Mobile nutzbar, Kanban Board horizontal scrollbar, mobile-optimierte Navigation mit Hamburger-Menü",
+      "Daily Planning (My Day): Eigene Seite zur Tagesplanung — bestehende Tasks aus Projekten zuweisen oder freie Einträge hinzufügen, per Drag & Drop priorisieren, Einträge als erledigt abhaken"
     ],
     "platform": "Web-App (Next.js)",
     "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",

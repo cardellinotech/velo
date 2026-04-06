@@ -61,6 +61,7 @@ Dominic is a DevOps freelancer who works across multiple client projects and per
 4. **When** I switch between client projects, **I want to** quickly change context, **so that** time is tracked against the correct project.
 5. **When** I work on a personal project like Aura, **I want to** use the same tool without billing overhead, **so that** all my work lives in one place.
 6. **When** I have routine tasks that repeat every week or month (maintenance windows, client check-ins, report generation), **I want** them to automatically appear on my board, **so that** I never forget recurring obligations.
+7. **When** I finish work for the day, **I want to** plan tomorrow's tasks and priorities, **so that** I start each morning with a clear focus instead of deciding what to do first.
 
 ### Pain Points (Ranked)
 
@@ -185,6 +186,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 - Business settings for invoice details
 - Recurring tasks (daily/weekly/monthly) with automatic creation
 - Fully responsive web layout (all pages mobile-friendly)
+- Daily planning ("My Day") — plan tomorrow's tasks and free-text notes, reorder by priority
 
 **Could Have:**
 - Task filtering and search
@@ -195,7 +197,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 
 **Won't Have (MVP):**
 - Multi-user support
-- Sprint management
+- ~~Sprint management~~ Daily Planning added (lightweight, not full sprint management)
 - Integrations
 - ~~Mobile app~~ Responsive web added (no native app needed)
 - Custom task types beyond the four defaults
@@ -222,6 +224,9 @@ Navigation → "Settings" → Fill in business name, address, VAT ID → Set def
 
 **Flow 7: Set Up Recurring Task**
 Project settings or Kanban → "New Recurring Task" → Enter title, type, priority → Select recurrence (daily/weekly/monthly) → Choose day (if weekly/monthly) → Assign to epic (optional) → Save → Task instances appear automatically on the board at scheduled times
+
+**Flow 8: Plan Tomorrow's Work**
+Navigation → "My Day" → Navigate to tomorrow → "Add Task" → Search and pick tasks from projects → Add free-text notes (e.g. "Standup 9:00") → Drag to reorder by priority → Done. Next morning: open "My Day" → work through the list, checking items off.
 
 ### Success Metrics
 
