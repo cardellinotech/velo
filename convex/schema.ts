@@ -177,4 +177,15 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_projectId", ["projectId"])
     .index("by_userId_status", ["userId", "status"]),
+
+  dailyPlanItems: defineTable({
+    userId: v.id("users"),
+    date: v.string(), // "YYYY-MM-DD"
+    taskId: v.optional(v.id("tasks")),
+    title: v.string(),
+    projectName: v.optional(v.string()),
+    isCompleted: v.boolean(),
+    order: v.number(),
+    createdAt: v.number(),
+  }).index("by_userId_and_date", ["userId", "date"]),
 });

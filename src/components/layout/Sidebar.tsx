@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
   LayoutDashboard,
+  CalendarDays,
   FolderKanban,
   Receipt,
   FileText,
@@ -17,8 +18,12 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
+const topNavItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "My Day", href: "/my-day", icon: CalendarDays },
+];
+
+const workNavItems = [
   { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Billing", href: "/billing", icon: Receipt },
   { label: "Invoices", href: "/invoices", icon: FileText },
@@ -80,7 +85,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           Menu
         </p>
         <ul className="flex flex-col gap-0.5">
-          {navItems.map(({ label, href, icon: Icon }) => (
+          {topNavItems.map(({ label, href, icon: Icon }) => (
             <li key={href}>
               <Link
                 href={href}
@@ -109,6 +114,42 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             </li>
           ))}
         </ul>
+
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Work
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {workNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {/* Active projects */}
         {projects && projects.length > 0 && (

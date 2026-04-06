@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
 import type * as crons from "../crons.js";
+import type * as dailyPlan from "../dailyPlan.js";
 import type * as dashboard from "../dashboard.js";
 import type * as epics from "../epics.js";
 import type * as http from "../http.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billing: typeof billing;
   crons: typeof crons;
+  dailyPlan: typeof dailyPlan;
   dashboard: typeof dashboard;
   epics: typeof epics;
   http: typeof http;
