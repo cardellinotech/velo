@@ -1,9 +1,10 @@
 import { auth } from "./auth";
+import type { Session } from "next-auth";
 
 export async function requireAuth(): Promise<string> {
-  let session: Awaited<ReturnType<typeof auth>>;
+  let session: Session | null;
   try {
-    session = await auth();
+    session = await auth() as Session | null;
   } catch (err) {
     console.error("[requireAuth] auth() threw:", err);
     throw new Error("UNAUTHORIZED");

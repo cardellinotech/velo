@@ -188,4 +188,65 @@ export default defineSchema({
     order: v.number(),
     createdAt: v.number(),
   }).index("by_userId_and_date", ["userId", "date"]),
+
+  codaSyncConfigs: defineTable({
+    userId: v.id("users"),
+    projectId: v.optional(v.id("projects")),
+    codaApiToken: v.string(),
+    codaDocId: v.string(),
+    codaTableId: v.string(),
+    columnMapping: v.object({
+      task: v.string(),
+      notes: v.string(),
+      duration: v.string(),
+      logDate: v.string(),
+      user: v.string(),
+    }),
+    projectMappings: v.optional(
+      v.array(
+        v.object({
+          codaValue: v.string(),
+          projectId: v.id("projects"),
+        })
+      )
+    ),
+    taskMappings: v.array(
+      v.object({
+        codaValue: v.string(),
+        taskId: v.id("tasks"),
+      })
+    ),
+    codaUserValue: v.optional(v.string()),
+    lastSyncAt: v.optional(v.number()),
+    lastSyncCount: v.optional(v.number()),
+    isSyncing: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_projectId", ["userId", "projectId"]),
+
+  codaSyncLog: defineTable({
+    userId: v.id("users"),
+    configId: v.id("codaSyncConfigs"),
+    syncedAt: v.number(),
+    entriesImported: v.number(),
+    entriesSkipped: v.number(),
+    errors: v.optional(
+      v.array(
+        v.object({
+          row: v.number(),
+          message: v.string(),
+        })
+      )
+    ),
+    status: v.union(
+      v.literal("success"),
+      v.literal("partial"),
+      v.literal("failed")
+    ),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_configId", ["configId"])
+    .index("by_configId_syncedAt", ["configId", "syncedAt"]),
 });

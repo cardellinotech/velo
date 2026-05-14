@@ -62,6 +62,7 @@ Dominic is a DevOps freelancer who works across multiple client projects and per
 5. **When** I work on a personal project like Aura, **I want to** use the same tool without billing overhead, **so that** all my work lives in one place.
 6. **When** I have routine tasks that repeat every week or month (maintenance windows, client check-ins, report generation), **I want** them to automatically appear on my board, **so that** I never forget recurring obligations.
 7. **When** I finish work for the day, **I want to** plan tomorrow's tasks and priorities, **so that** I start each morning with a clear focus instead of deciding what to do first.
+8. **When** I've been tracking time in Coda for existing clients, **I want to** import those entries into Velo, **so that** my billing and invoices are complete without re-entering hours manually.
 
 ### Pain Points (Ranked)
 
@@ -187,6 +188,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 - Recurring tasks (daily/weekly/monthly) with automatic creation
 - Fully responsive web layout (all pages mobile-friendly)
 - Daily planning ("My Day") — plan tomorrow's tasks and free-text notes, reorder by priority
+- Coda time sync — import time entries from Coda table with manual sync button and project/task mapping
 
 **Could Have:**
 - Task filtering and search
@@ -198,7 +200,7 @@ End of month. User opens the Billing view, selects a client and date range. Velo
 **Won't Have (MVP):**
 - Multi-user support
 - ~~Sprint management~~ Daily Planning added (lightweight, not full sprint management)
-- Integrations
+- ~~Integrations~~ Coda time sync added in Phase 11 (limited scope: one-way time entry import only)
 - ~~Mobile app~~ Responsive web added (no native app needed)
 - Custom task types beyond the four defaults
 
@@ -227,6 +229,9 @@ Project settings or Kanban → "New Recurring Task" → Enter title, type, prior
 
 **Flow 8: Plan Tomorrow's Work**
 Navigation → "My Day" → Navigate to tomorrow → "Add Task" → Search and pick tasks from projects → Add free-text notes (e.g. "Standup 9:00") → Drag to reorder by priority → Done. Next morning: open "My Day" → work through the list, checking items off.
+
+**Flow 9: Sync Time Entries from Coda**
+Settings → "Coda Sync" section → Enter API token + doc/table IDs → "Test Connection" → Map Coda columns to Velo fields → Map Coda task values to Velo projects/tasks → Save config → "Sync Now" → Review: "12 entries imported, 3 skipped" → Check Billing view → All Coda hours reflected.
 
 ### Success Metrics
 

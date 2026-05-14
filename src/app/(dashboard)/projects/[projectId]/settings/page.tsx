@@ -15,6 +15,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { RecurringTaskList } from "@/components/recurring/RecurringTaskList";
 import { RecurringTaskForm } from "@/components/recurring/RecurringTaskForm";
+import { CodaSyncSettings } from "@/components/settings/CodaSyncSettings";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
@@ -251,6 +252,10 @@ export default function ProjectSettingsPage() {
           projectId={projectId}
         />
       </div>
+
+      <hr className="border-border/40" />
+
+      <CodaSyncSettings projectId={projectId} />
 
       <hr className="border-border/40" />
 

@@ -31,7 +31,8 @@
       "Rechnungs-Lifecycle: Entwurf → Versendet → Bezahlt → Überfällig",
       "Recurring Tasks: Wiederkehrende Aufgaben mit flexiblen Intervallen (täglich/wöchentlich/monatlich), automatische Erstellung als eigenständige Task-Instanzen",
       "Vollständig responsive Web-App: Alle Seiten und Funktionen auf Mobile nutzbar, Kanban Board horizontal scrollbar, mobile-optimierte Navigation mit Hamburger-Menü",
-      "Daily Planning (My Day): Eigene Seite zur Tagesplanung — bestehende Tasks aus Projekten zuweisen oder freie Einträge hinzufügen, per Drag & Drop priorisieren, Einträge als erledigt abhaken"
+      "Daily Planning (My Day): Eigene Seite zur Tagesplanung — bestehende Tasks aus Projekten zuweisen oder freie Einträge hinzufügen, per Drag & Drop priorisieren, Einträge als erledigt abhaken",
+      "Coda Time Sync: Zeiteinträge aus einer Coda-Tabelle (Task, Notes, Duration, Log Date, User) per manuellem Sync-Button nach Velo importieren, mit automatischem Mapping auf bestehende Projekte und Tasks, Duplikat-Erkennung und Sync-Historie"
     ],
     "platform": "Web-App (Next.js)",
     "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",

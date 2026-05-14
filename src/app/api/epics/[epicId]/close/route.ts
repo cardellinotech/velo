@@ -8,6 +8,9 @@ function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (e instanceof Error && e.message === "NOT_FOUND") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   console.error(e);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }

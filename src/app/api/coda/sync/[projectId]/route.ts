@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/session";
 import { codaSyncConfigs, codaSyncLog, tasks, projects, timeEntries } from "@/lib/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { fetchCodaRows, parseDuration, parseLogDate } from "@/lib/coda-sync";
 
 function handleError(e: unknown) {
@@ -33,14 +33,14 @@ export async function POST(
       return NextResponse.json({ error: "No Coda sync configuration found" }, { status: 404 });
     }
 
-    // Concurrent sync guard — use transaction + check
+    // Concurrent sync guard — SELECT FOR UPDATE acquires a row lock before check-then-set
     try {
       await db.transaction(async (tx) => {
-        const [current] = await tx.select({ isSyncing: codaSyncConfigs.isSyncing })
-          .from(codaSyncConfigs)
-          .where(eq(codaSyncConfigs.id, config.id))
-          .limit(1);
-        if (current?.isSyncing) throw new Error("ALREADY_SYNCING");
+        const rows = await tx.execute(
+          sql`SELECT is_syncing FROM coda_sync_configs WHERE id = ${config.id} FOR UPDATE`
+        );
+        const row = rows[0] as { is_syncing: boolean } | undefined;
+        if (row?.is_syncing) throw new Error("ALREADY_SYNCING");
         await tx.update(codaSyncConfigs).set({ isSyncing: true }).where(eq(codaSyncConfigs.id, config.id));
       });
     } catch (e) {
