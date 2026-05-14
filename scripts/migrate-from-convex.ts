@@ -19,10 +19,15 @@ const idMap = new Map<string, string>();
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function readJsonl(filename: string): Promise<any[]> {
-  const filepath = path.join("./convex-export", filename);
-  if (!fs.existsSync(filepath)) {
-    console.log(`  Skipping ${filename} (not found)`);
+async function readJsonl(tableName: string): Promise<any[]> {
+  // Convex export format: convex-export/<tableName>/documents.jsonl
+  const subpath = path.join("./convex-export", tableName, "documents.jsonl");
+  // Fallback: flat format convex-export/<tableName>.jsonl
+  const flatpath = path.join("./convex-export", `${tableName}.jsonl`);
+
+  const filepath = fs.existsSync(subpath) ? subpath : fs.existsSync(flatpath) ? flatpath : null;
+  if (!filepath) {
+    console.log(`  Skipping ${tableName} (not found)`);
     return [];
   }
   const rl = readline.createInterface({
@@ -58,7 +63,7 @@ function numToStr(val: number | string | null | undefined): string | null {
 
 async function migrateUsers() {
   console.log("Migrating users...");
-  const records = await readJsonl("users.jsonl");
+  const records = await readJsonl("users");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -79,7 +84,7 @@ async function migrateUsers() {
 
 async function migrateProjects() {
   console.log("Migrating projects...");
-  const records = await readJsonl("projects.jsonl");
+  const records = await readJsonl("projects");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -104,7 +109,7 @@ async function migrateProjects() {
 
 async function migrateEpics() {
   console.log("Migrating epics...");
-  const records = await readJsonl("epics.jsonl");
+  const records = await readJsonl("epics");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -128,7 +133,7 @@ async function migrateEpics() {
 
 async function migrateRecurringTaskTemplates() {
   console.log("Migrating recurring task templates...");
-  const records = await readJsonl("recurringTaskTemplates.jsonl");
+  const records = await readJsonl("recurringTaskTemplates");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -160,7 +165,7 @@ async function migrateRecurringTaskTemplates() {
 
 async function migrateTasks() {
   console.log("Migrating tasks...");
-  const records = await readJsonl("tasks.jsonl");
+  const records = await readJsonl("tasks");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -188,7 +193,7 @@ async function migrateTasks() {
 
 async function migrateTimeEntries() {
   console.log("Migrating time entries...");
-  const records = await readJsonl("timeEntries.jsonl");
+  const records = await readJsonl("timeEntries");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -213,7 +218,7 @@ async function migrateTimeEntries() {
 
 async function migrateInvoices() {
   console.log("Migrating invoices...");
-  const records = await readJsonl("invoices.jsonl");
+  const records = await readJsonl("invoices");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -256,7 +261,7 @@ async function migrateInvoices() {
 
 async function migrateDailyPlanItems() {
   console.log("Migrating daily plan items...");
-  const records = await readJsonl("dailyPlanItems.jsonl");
+  const records = await readJsonl("dailyPlanItems");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -280,7 +285,7 @@ async function migrateDailyPlanItems() {
 
 async function migrateCodaSyncConfigs() {
   console.log("Migrating Coda sync configs...");
-  const records = await readJsonl("codaSyncConfigs.jsonl");
+  const records = await readJsonl("codaSyncConfigs");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -310,7 +315,7 @@ async function migrateCodaSyncConfigs() {
 
 async function migrateCodaSyncLog() {
   console.log("Migrating Coda sync log...");
-  const records = await readJsonl("codaSyncLog.jsonl");
+  const records = await readJsonl("codaSyncLog");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
@@ -334,7 +339,7 @@ async function migrateCodaSyncLog() {
 
 async function migrateUserSettings() {
   console.log("Migrating user settings...");
-  const records = await readJsonl("userSettings.jsonl");
+  const records = await readJsonl("userSettings");
   let count = 0;
   for (const r of records) {
     const newId = randomUUID();
