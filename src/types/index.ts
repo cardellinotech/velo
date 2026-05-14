@@ -20,7 +20,6 @@ export interface Epic {
   projectId: string;
   userId: string;
   name: string;
-  title?: string;
   description?: string;
   status: "open" | "closed";
   color?: string;
@@ -117,14 +116,17 @@ export interface InvoiceLineItem {
 export interface UserSettings {
   id: string;
   userId: string;
-  defaultHourlyRate?: number;
-  currency: string;
+  nextInvoiceNumber: number;
+  defaultCurrency: string;
+  businessName?: string;
+  businessAddress?: string;
+  vatId?: string;
+  taxRate?: string;
+  bankName?: string;
+  iban?: string;
+  bic?: string;
+  paymentTermDays?: number;
   invoicePrefix?: string;
-  companyName?: string;
-  companyAddress?: string;
-  companyEmail?: string;
-  vatNumber?: string;
-  paymentTerms?: number;
   createdAt: number;
   updatedAt: number;
 }

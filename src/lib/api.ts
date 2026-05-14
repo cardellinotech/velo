@@ -57,7 +57,7 @@ export const api = {
     listByProject: (projectId: string) =>
       fetchJson<Epic[]>(`/api/epics/by-project/${projectId}`),
     get: (id: string) => fetchJson<Epic>(`/api/epics/${id}`),
-    create: (data: { projectId: string; title: string; description?: string }) =>
+    create: (data: { projectId: string; name: string; description?: string }) =>
       fetchJson<Epic>("/api/epics", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
