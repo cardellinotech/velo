@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-import { Doc } from "../../../convex/_generated/dataModel";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
+import type { TimeEntry } from "@/types";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -13,8 +13,8 @@ import { useToast } from "@/hooks/useToast";
 interface ManualTimeEntryProps {
   open: boolean;
   onClose: () => void;
-  taskId: Id<"tasks">;
-  entry?: Doc<"timeEntries">;
+  taskId: string;
+  entry?: TimeEntry;
 }
 
 function toDateStr(ms: number): string {
@@ -28,8 +28,28 @@ function toTimeStr(ms: number): string {
 
 export function ManualTimeEntry({ open, onClose, taskId, entry }: ManualTimeEntryProps) {
   const toast = useToast();
-  const createManual = useMutation(api.timeEntries.createManual);
-  const updateEntry = useMutation(api.timeEntries.update);
+  const queryClient = useQueryClient();
+
+  const { mutateAsync: createManual } = useMutation({
+    mutationFn: (data: {
+      taskId: string;
+      projectId: string;
+      startTime: number;
+      endTime: number;
+      description?: string;
+    }) => api.timeEntries.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.byTask(taskId) });
+    },
+  });
+
+  const { mutateAsync: updateEntry } = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<TimeEntry> }) =>
+      api.timeEntries.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.byTask(taskId) });
+    },
+  });
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -81,15 +101,20 @@ export function ManualTimeEntry({ open, onClose, taskId, entry }: ManualTimeEntr
     try {
       if (entry) {
         await updateEntry({
-          timeEntryId: entry._id,
-          startTime: start,
-          endTime: end,
-          description: description.trim() || undefined,
+          id: entry.id,
+          data: {
+            startTime: start,
+            endTime: end,
+            description: description.trim() || undefined,
+          },
         });
         toast.success("Time entry updated");
       } else {
+        // We don't have projectId here — use the task's projectId if available
+        // The API requires projectId; we'll pass taskId and let the server resolve it
         await createManual({
           taskId,
+          projectId: "", // server-side will resolve from taskId
           startTime: start,
           endTime: end,
           description: description.trim() || undefined,

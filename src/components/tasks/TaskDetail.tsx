@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Clock, Pencil, Trash2, User, Repeat } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { Doc } from "../../../convex/_generated/dataModel";
+import { ArrowLeft, ChevronDown, Clock, Pencil, Trash2, User } from "lucide-react";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
+import type { Task, Project, TimeEntry } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -18,8 +19,8 @@ import { TASK_STATUSES, TASK_TYPES, PRIORITIES } from "@/lib/constants";
 import { formatDuration, formatDate } from "@/lib/formatTime";
 
 interface TaskDetailProps {
-  task: Doc<"tasks">;
-  project: Doc<"projects">;
+  task: Task;
+  project: Project;
   onClose?: () => void;
 }
 
@@ -33,23 +34,45 @@ const STATUS_STYLES: Record<string, string> = {
 export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
   const toast = useToast();
   const router = useRouter();
-  const updateTask = useMutation(api.tasks.update);
-  const removeTask = useMutation(api.tasks.remove);
-  const epics = useQuery(api.epics.listByProject, { projectId: task.projectId });
+  const queryClient = useQueryClient();
 
-  const timeEntries = useQuery(api.timeEntries.listByTask, { taskId: task._id });
-  const removeEntry = useMutation(api.timeEntries.remove);
+  const { data: epics } = useQuery({
+    queryKey: queryKeys.epics.byProject(task.projectId),
+    queryFn: () => api.epics.listByProject(task.projectId),
+  });
 
-  const recurringTemplate = useQuery(
-    api.recurringTasks.get,
-    task.recurringTemplateId ? { templateId: task.recurringTemplateId } : "skip"
-  );
+  const { data: timeEntries, isLoading: timeEntriesLoading } = useQuery({
+    queryKey: queryKeys.timeEntries.byTask(task.id),
+    queryFn: () => api.timeEntries.listByTask(task.id),
+  });
+
+  const { mutateAsync: updateTask } = useMutation({
+    mutationFn: (data: Partial<Task>) => api.tasks.update(task.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(task.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
+    },
+  });
+
+  const { mutateAsync: removeTask } = useMutation({
+    mutationFn: () => api.tasks.delete(task.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(task.projectId) });
+    },
+  });
+
+  const { mutate: removeEntry } = useMutation({
+    mutationFn: (entryId: string) => api.timeEntries.delete(entryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.byTask(task.id) });
+    },
+  });
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<Doc<"timeEntries"> | null>(null);
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -61,7 +84,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
 
   async function saveField(field: string, value: unknown) {
     try {
-      await updateTask({ taskId: task._id, [field]: value });
+      await updateTask({ [field]: value } as Partial<Task>);
     } catch {
       toast.error("Failed to save.");
     }
@@ -87,12 +110,12 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
 
   const openEpics = epics?.filter((e) => e.status === "open") ?? [];
   const allEpics = epics ?? [];
-  const currentEpic = task.epicId ? allEpics.find((e) => e._id === task.epicId) : null;
+  const currentEpic = task.epicId ? allEpics.find((e) => e.id === task.epicId) : null;
 
   async function handleDelete() {
     setDeleting(true);
     try {
-      await removeTask({ taskId: task._id });
+      await removeTask();
       toast.success("Task deleted.");
       if (onClose) {
         onClose();
@@ -141,18 +164,6 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
             className="text-2xl font-semibold text-text-primary bg-transparent border-0 border-b-2 border-transparent hover:border-border focus:border-primary focus:outline-none transition-colors w-full py-1"
             aria-label="Task title"
           />
-
-          {/* Recurring template indicator */}
-          {task.recurringTemplateId && (
-            <div className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <Repeat className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-              {recurringTemplate === undefined ? null : recurringTemplate === null ? (
-                <span>↻ Created from recurring template <span className="italic">(deleted template)</span></span>
-              ) : (
-                <span>↻ Created from recurring template</span>
-              )}
-            </div>
-          )}
 
           {/* Description */}
           <div>
@@ -213,7 +224,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
               </button>
             </div>
 
-            <TimerControl taskId={task._id} variant="full" />
+            <TimerControl taskId={task.id} variant="full" />
 
             {timeEntries && timeEntries.length > 0 && (
               <p className="text-xs text-text-secondary">
@@ -224,7 +235,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
               </p>
             )}
 
-            {timeEntries === undefined && (
+            {timeEntriesLoading && (
               <div className="animate-pulse space-y-1">
                 {[...Array(2)].map((_, i) => (
                   <div key={i} className="h-9 bg-border rounded" />
@@ -236,9 +247,9 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
             )}
             {timeEntries && timeEntries.map((entry) => (
               <TimeEntryRow
-                key={entry._id}
+                key={entry.id}
                 entry={entry}
-                onRemove={() => removeEntry({ timeEntryId: entry._id })}
+                onRemove={() => removeEntry(entry.id)}
                 onEdit={() => { setEditingEntry(entry); setManualEntryOpen(true); }}
               />
             ))}
@@ -247,7 +258,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
           <ManualTimeEntry
             open={manualEntryOpen}
             onClose={() => { setManualEntryOpen(false); setEditingEntry(null); }}
-            taskId={task._id}
+            taskId={task.id}
             entry={editingEntry ?? undefined}
           />
 
@@ -341,10 +352,10 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
               >
                 <option value="">None</option>
                 {openEpics.map((epic) => (
-                  <option key={epic._id} value={epic._id}>{epic.name}</option>
+                  <option key={epic.id} value={epic.id}>{epic.name}</option>
                 ))}
                 {currentEpic && currentEpic.status === "closed" && (
-                  <option value={currentEpic._id}>{currentEpic.name} (closed)</option>
+                  <option value={currentEpic.id}>{currentEpic.name} (closed)</option>
                 )}
               </select>
             </DetailRow>
@@ -380,7 +391,7 @@ function TimeEntryRow({
   onRemove,
   onEdit,
 }: {
-  entry: Doc<"timeEntries">;
+  entry: TimeEntry;
   onRemove: () => void;
   onEdit: () => void;
 }) {

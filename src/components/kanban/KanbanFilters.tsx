@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import { TASK_TYPES, PRIORITIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -14,13 +14,16 @@ export interface KanbanFilterState {
 }
 
 interface KanbanFiltersProps {
-  projectId: Id<"projects">;
+  projectId: string;
   filters: KanbanFilterState;
   onChange: (filters: KanbanFilterState) => void;
 }
 
 export function KanbanFilters({ projectId, filters, onChange }: KanbanFiltersProps) {
-  const epics = useQuery(api.epics.listByProject, { projectId });
+  const { data: epics } = useQuery({
+    queryKey: queryKeys.epics.byProject(projectId),
+    queryFn: () => api.epics.listByProject(projectId),
+  });
   const openEpics = epics?.filter((e) => e.status === "open") ?? [];
 
   const hasActiveFilters =
@@ -84,7 +87,7 @@ export function KanbanFilters({ projectId, filters, onChange }: KanbanFiltersPro
         >
           <option value="">All epics</option>
           {openEpics.map((epic) => (
-            <option key={epic._id} value={epic._id}>
+            <option key={epic.id} value={epic.id}>
               {epic.name}
             </option>
           ))}

@@ -1,13 +1,12 @@
 "use client";
 
 import { Play, Square } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { useTimer } from "@/hooks/useTimer";
 import { TimerDisplay } from "./TimerDisplay";
 import { cn } from "@/lib/utils";
 
 interface TimerControlProps {
-  taskId: Id<"tasks">;
+  taskId: string;
   variant?: "compact" | "full";
   className?: string;
 }
