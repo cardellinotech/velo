@@ -64,8 +64,10 @@ export interface RecurringTaskTemplate {
   description?: string;
   taskType: TaskType;
   priority: Priority;
-  recurrenceType: "daily" | "weekly" | "monthly";
-  recurrenceDays?: number[];
+  recurrence: "daily" | "weekly" | "monthly";
+  dayOfWeek?: number | null;
+  dayOfMonth?: number | null;
+  nextDueDate: number;
   isActive: boolean;
   createdAt: number;
   updatedAt: number;

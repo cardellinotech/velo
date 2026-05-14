@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -24,9 +24,9 @@ const EPIC_COLORS = [
 interface EpicFormProps {
   open: boolean;
   onClose: () => void;
-  projectId: Id<"projects">;
+  projectId: string;
   epic?: {
-    _id: Id<"epics">;
+    id: string;
     name: string;
     description?: string;
     color?: string;
@@ -35,14 +35,43 @@ interface EpicFormProps {
 
 export function EpicForm({ open, onClose, projectId, epic }: EpicFormProps) {
   const toast = useToast();
-  const createEpic = useMutation(api.epics.create);
-  const updateEpic = useMutation(api.epics.update);
+  const queryClient = useQueryClient();
 
   const [name, setName] = useState(epic?.name ?? "");
   const [description, setDescription] = useState(epic?.description ?? "");
   const [color, setColor] = useState(epic?.color ?? EPIC_COLORS[0]);
   const [nameError, setNameError] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const createEpic = useMutation({
+    mutationFn: (data: { projectId: string; name: string; description?: string; color?: string }) =>
+      api.epics.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.epics.byProject(projectId) });
+      toast.success("Epic created.");
+      setName("");
+      setDescription("");
+      setColor(EPIC_COLORS[0]);
+      onClose();
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  const updateEpic = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string; description?: string; color?: string } }) =>
+      api.epics.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.epics.byProject(projectId) });
+      toast.success("Epic updated.");
+      onClose();
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  const loading = createEpic.isPending || updateEpic.isPending;
 
   function handleClose() {
     setName(epic?.name ?? "");
@@ -59,33 +88,22 @@ export function EpicForm({ open, onClose, projectId, epic }: EpicFormProps) {
       return;
     }
     setNameError("");
-    setLoading(true);
-    try {
-      if (epic) {
-        await updateEpic({
-          epicId: epic._id,
+    if (epic) {
+      updateEpic.mutate({
+        id: epic.id,
+        data: {
           name: name.trim(),
           description: description.trim() || undefined,
           color,
-        });
-        toast.success("Epic updated.");
-      } else {
-        await createEpic({
-          projectId,
-          name: name.trim(),
-          description: description.trim() || undefined,
-          color,
-        });
-        toast.success("Epic created.");
-        setName("");
-        setDescription("");
-        setColor(EPIC_COLORS[0]);
-      }
-      onClose();
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+        },
+      });
+    } else {
+      createEpic.mutate({
+        projectId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        color,
+      });
     }
   }
 
