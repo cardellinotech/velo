@@ -145,14 +145,15 @@ export interface BillingEntry {
   id: string;
   taskId: string;
   taskTitle: string;
+  taskType: string;
   projectId: string;
   projectName: string;
+  clientName: string | null;
+  currency: string | null;
   epicId: string | null;
   epicName: string | null;
   startTime: number;
-  endTime: number;
-  duration: number;
+  durationMs: number;
   description: string | null;
-  isManual: boolean;
-  hourlyRate: number | null;
+  hourlyRate: string | null;
 }

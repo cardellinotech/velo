@@ -57,8 +57,7 @@ export async function GET(req: Request) {
       .orderBy(asc(timeEntries.startTime))
       .limit(500);
 
-    // Return result with _id for backwards compat with existing frontend
-    return NextResponse.json(result.map((e) => ({ ...e, _id: e.id })));
+    return NextResponse.json(result);
   } catch (e) {
     return handleError(e);
   }

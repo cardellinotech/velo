@@ -7,7 +7,7 @@ import { formatDurationShort } from "@/lib/formatTime";
 import { formatAmount } from "@/lib/currency";
 import { type TaskType } from "@/lib/constants";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
-import type { BillingEntry } from "../../../convex/billing";
+import type { BillingEntry } from "@/types";
 
 type TaskTypeRow = {
   taskType: TaskType;
@@ -38,7 +38,7 @@ function groupEntries(entries: BillingEntry[]): ProjectRow[] {
   for (const entry of entries) {
     const key = entry.projectId;
     if (!projectMap.has(key)) {
-      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, hourlyRate: entry.hourlyRate, currency: entry.currency, entries: [] });
+      projectMap.set(key, { name: entry.projectName, clientName: entry.clientName, hourlyRate: entry.hourlyRate !== null ? Number(entry.hourlyRate) : null, currency: entry.currency, entries: [] });
     }
     projectMap.get(key)!.entries.push(entry);
   }
@@ -60,7 +60,7 @@ function groupEntries(entries: BillingEntry[]): ProjectRow[] {
     for (const [, { name: epicName, epicId, entries: epicEntries }] of epicMap) {
       const typeMap = new Map<TaskType, { durationMs: number; tasks: Set<string> }>();
       for (const entry of epicEntries) {
-        const t = entry.taskType;
+        const t = entry.taskType as TaskType;
         if (!typeMap.has(t)) typeMap.set(t, { durationMs: 0, tasks: new Set() });
         const row = typeMap.get(t)!;
         row.durationMs += entry.durationMs;

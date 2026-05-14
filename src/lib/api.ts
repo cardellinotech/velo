@@ -185,9 +185,9 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
-    searchTasks: (query: string, projectId?: string) =>
+    searchTasks: (query: string, date: string, projectId?: string) =>
       fetchJson<Task[]>(
-        `/api/daily-plan/search-tasks?q=${encodeURIComponent(query)}${projectId ? `&projectId=${projectId}` : ""}`
+        `/api/daily-plan/search-tasks?search=${encodeURIComponent(query)}&date=${date}${projectId ? `&projectId=${projectId}` : ""}`
       ),
     toggle: (id: string) =>
       fetchJson<void>(`/api/daily-plan/${id}/toggle`, { method: "POST" }),
