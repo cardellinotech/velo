@@ -55,9 +55,37 @@ export async function POST(req: Request) {
       .limit(1);
 
     if (existing) {
+      const {
+        defaultCurrency,
+        businessName,
+        businessAddress,
+        vatId,
+        taxRate,
+        bankName,
+        iban,
+        bic,
+        paymentTermDays,
+        invoicePrefix,
+      } = body;
+      const fieldsToUpdate: Partial<typeof userSettings.$inferInsert> = {};
+      if (defaultCurrency !== undefined) fieldsToUpdate.defaultCurrency = defaultCurrency;
+      if (businessName !== undefined) fieldsToUpdate.businessName = businessName;
+      if (businessAddress !== undefined) fieldsToUpdate.businessAddress = businessAddress;
+      if (vatId !== undefined) fieldsToUpdate.vatId = vatId;
+      if (taxRate !== undefined) fieldsToUpdate.taxRate = taxRate;
+      if (bankName !== undefined) fieldsToUpdate.bankName = bankName;
+      if (iban !== undefined) fieldsToUpdate.iban = iban;
+      if (bic !== undefined) fieldsToUpdate.bic = bic;
+      if (paymentTermDays !== undefined) fieldsToUpdate.paymentTermDays = paymentTermDays;
+      if (invoicePrefix !== undefined) fieldsToUpdate.invoicePrefix = invoicePrefix;
+
+      if (Object.keys(fieldsToUpdate).length === 0) {
+        return NextResponse.json(existing);
+      }
+
       const [updated] = await db
         .update(userSettings)
-        .set({ ...body })
+        .set(fieldsToUpdate)
         .where(eq(userSettings.userId, userId))
         .returning();
       return NextResponse.json(updated);

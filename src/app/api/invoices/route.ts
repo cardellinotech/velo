@@ -81,7 +81,7 @@ export async function GET(req: Request) {
         projectName: projects.name,
       })
       .from(invoices)
-      .innerJoin(projects, eq(invoices.projectId, projects.id))
+      .innerJoin(projects, and(eq(invoices.projectId, projects.id), eq(projects.userId, userId)))
       .where(and(...conditions))
       .orderBy(desc(invoices.createdAt))
       .limit(200);

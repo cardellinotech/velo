@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/session";
 import { dailyPlanItems, tasks, projects } from "@/lib/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, inArray } from "drizzle-orm";
 
 function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") {
@@ -31,29 +31,33 @@ export async function GET(req: NextRequest) {
       .orderBy(asc(dailyPlanItems.order))
       .limit(200);
 
-    // Enrich with task data
-    const enriched = await Promise.all(
-      items.map(async (item) => {
-        if (item.taskId) {
-          const [task] = await db
-            .select({ status: tasks.status, taskType: tasks.taskType, title: tasks.title })
+    // Enrich with task data — single IN query instead of N+1
+    const taskIds = items.map((i) => i.taskId).filter((id): id is string => id !== null);
+    const taskRows =
+      taskIds.length > 0
+        ? await db
+            .select({ id: tasks.id, title: tasks.title, status: tasks.status, taskType: tasks.taskType })
             .from(tasks)
-            .where(eq(tasks.id, item.taskId))
-            .limit(1);
-          if (!task) {
-            return { ...item, taskDeleted: true, taskStatus: null, taskType: null };
-          }
-          return {
-            ...item,
-            taskDeleted: false,
-            taskStatus: task.status,
-            taskType: task.taskType,
-            title: task.title,
-          };
+            .where(inArray(tasks.id, taskIds))
+        : [];
+    const taskMap = new Map(taskRows.map((t) => [t.id, t]));
+
+    const enriched = items.map((item) => {
+      if (item.taskId) {
+        const task = taskMap.get(item.taskId);
+        if (!task) {
+          return { ...item, taskDeleted: true, taskStatus: null, taskType: null };
         }
-        return { ...item, taskDeleted: false, taskStatus: null, taskType: null };
-      })
-    );
+        return {
+          ...item,
+          taskDeleted: false,
+          taskStatus: task.status,
+          taskType: task.taskType,
+          title: task.title,
+        };
+      }
+      return { ...item, taskDeleted: false, taskStatus: null, taskType: null };
+    });
 
     return NextResponse.json(enriched);
   } catch (e) {

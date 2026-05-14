@@ -60,7 +60,7 @@ export async function PATCH(
 
     const [updated] = await db.update(tasks)
       .set(patch)
-      .where(eq(tasks.id, taskId))
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
       .returning();
     return NextResponse.json(updated);
   } catch (e) {
@@ -88,7 +88,7 @@ export async function DELETE(
       .set({ endTime: now, duration: sql`${now} - start_time` })
       .where(and(eq(timeEntries.taskId, taskId), isNull(timeEntries.endTime)));
 
-    await db.delete(tasks).where(eq(tasks.id, taskId));
+    await db.delete(tasks).where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
     return NextResponse.json({ success: true });
   } catch (e) {
     return handleError(e);

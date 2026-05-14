@@ -34,27 +34,30 @@ export async function POST(
     }
 
     // Concurrent sync guard — SELECT FOR UPDATE acquires a row lock before check-then-set
+    let syncStarted = false;
     try {
-      await db.transaction(async (tx) => {
-        const rows = await tx.execute(
-          sql`SELECT is_syncing FROM coda_sync_configs WHERE id = ${config.id} FOR UPDATE`
-        );
-        const row = rows[0] as { is_syncing: boolean } | undefined;
-        if (row?.is_syncing) throw new Error("ALREADY_SYNCING");
-        await tx.update(codaSyncConfigs).set({ isSyncing: true }).where(eq(codaSyncConfigs.id, config.id));
-      });
-    } catch (e) {
-      if (e instanceof Error && e.message === "ALREADY_SYNCING") {
-        return NextResponse.json({
-          imported: 0,
-          skipped: 0,
-          errors: [{ row: 0, message: "Synchronisierung läuft bereits." }],
+      // Mutex: set isSyncing=true atomically
+      try {
+        await db.transaction(async (tx) => {
+          const rows = await tx.execute(
+            sql`SELECT is_syncing FROM coda_sync_configs WHERE id = ${config.id} FOR UPDATE`
+          );
+          const row = rows[0] as { is_syncing: boolean } | undefined;
+          if (row?.is_syncing) throw new Error("ALREADY_SYNCING");
+          await tx.update(codaSyncConfigs).set({ isSyncing: true }).where(eq(codaSyncConfigs.id, config.id));
         });
+        syncStarted = true;
+      } catch (e) {
+        if (e instanceof Error && e.message === "ALREADY_SYNCING") {
+          return NextResponse.json({
+            imported: 0,
+            skipped: 0,
+            errors: [{ row: 0, message: "Synchronisierung läuft bereits." }],
+          });
+        }
+        throw e;
       }
-      throw e;
-    }
 
-    try {
       // Build task map
       const taskMappings = (config.taskMappings as { codaValue: string; taskId: string }[]) ?? [];
       const taskMap = new Map<string, string>(taskMappings.map((m) => [m.codaValue, m.taskId]));
@@ -237,8 +240,10 @@ export async function POST(
 
       return NextResponse.json({ imported, skipped, errors });
     } finally {
-      // Always clear isSyncing flag
-      await db.update(codaSyncConfigs).set({ isSyncing: false }).where(eq(codaSyncConfigs.id, config.id));
+      // Always clear isSyncing flag if we set it
+      if (syncStarted) {
+        await db.update(codaSyncConfigs).set({ isSyncing: false }).where(eq(codaSyncConfigs.id, config.id));
+      }
     }
   } catch (e) {
     return handleError(e);

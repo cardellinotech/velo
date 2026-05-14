@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { invoices, projects, userSettings, timeEntries, tasks } from "@/lib/schema";
 import { requireAuth } from "@/lib/session";
-import { eq, and, gte, lte, isNotNull, asc } from "drizzle-orm";
+import { eq, and, gte, lte, isNotNull, asc, inArray } from "drizzle-orm";
 
 function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") {
@@ -98,16 +98,15 @@ export async function GET(
       )
       .orderBy(asc(timeEntries.startTime));
 
-    // Get task titles
+    // Get task titles — single IN query instead of N+1
     const taskIds = [...new Set(timeEntriesInPeriod.map((e) => e.taskId))];
     const taskTitles = new Map<string, string>();
-    for (const taskId of taskIds) {
-      const [task] = await db
-        .select({ title: tasks.title })
+    if (taskIds.length > 0) {
+      const taskRows = await db
+        .select({ id: tasks.id, title: tasks.title })
         .from(tasks)
-        .where(eq(tasks.id, taskId))
-        .limit(1);
-      if (task) taskTitles.set(taskId, task.title);
+        .where(inArray(tasks.id, taskIds));
+      for (const t of taskRows) taskTitles.set(t.id, t.title);
     }
 
     // Group by task
@@ -249,7 +248,7 @@ export async function PATCH(
     const [updated] = await db
       .update(invoices)
       .set(updateFields)
-      .where(eq(invoices.id, invoiceId))
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -280,7 +279,7 @@ export async function DELETE(
       );
     }
 
-    await db.delete(invoices).where(eq(invoices.id, invoiceId));
+    await db.delete(invoices).where(and(eq(invoices.id, invoiceId), eq(invoices.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (e) {

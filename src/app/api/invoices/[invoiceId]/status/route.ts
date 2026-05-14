@@ -61,7 +61,7 @@ export async function PATCH(
     const [updated] = await db
       .update(invoices)
       .set(updateFields)
-      .where(eq(invoices.id, invoiceId))
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);

@@ -53,7 +53,7 @@ export async function POST(
 
     const [updated] = await db.update(recurringTaskTemplates)
       .set(updates)
-      .where(eq(recurringTaskTemplates.id, templateId))
+      .where(and(eq(recurringTaskTemplates.id, templateId), eq(recurringTaskTemplates.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);

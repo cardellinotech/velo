@@ -58,7 +58,7 @@ export async function PATCH(
 
     const [updated] = await db.update(timeEntries)
       .set(patch)
-      .where(eq(timeEntries.id, entryId))
+      .where(and(eq(timeEntries.id, entryId), eq(timeEntries.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -83,7 +83,7 @@ export async function DELETE(
       throw new Error("NOT_FOUND");
     }
 
-    await db.delete(timeEntries).where(eq(timeEntries.id, entryId));
+    await db.delete(timeEntries).where(and(eq(timeEntries.id, entryId), eq(timeEntries.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (e) {

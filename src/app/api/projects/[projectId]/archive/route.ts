@@ -33,7 +33,7 @@ export async function POST(
     const now = Date.now();
     const [updated] = await db.update(projects)
       .set({ status: "archived", updatedAt: now })
-      .where(eq(projects.id, projectId))
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
       .returning();
 
     await db.update(recurringTaskTemplates)

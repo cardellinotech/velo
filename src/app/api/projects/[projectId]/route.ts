@@ -60,7 +60,7 @@ export async function PATCH(
 
     const [updated] = await db.update(projects)
       .set(patch)
-      .where(eq(projects.id, projectId))
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
       .returning();
     return NextResponse.json(updated);
   } catch (e) {

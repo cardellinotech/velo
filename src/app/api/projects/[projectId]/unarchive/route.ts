@@ -32,7 +32,7 @@ export async function POST(
 
     const [updated] = await db.update(projects)
       .set({ status: "active", updatedAt: Date.now() })
-      .where(eq(projects.id, projectId))
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
       .returning();
     return NextResponse.json(updated);
   } catch (e) {

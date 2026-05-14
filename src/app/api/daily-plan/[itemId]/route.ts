@@ -31,7 +31,7 @@ export async function DELETE(
       throw new Error("NOT_FOUND");
     }
 
-    await db.delete(dailyPlanItems).where(eq(dailyPlanItems.id, itemId));
+    await db.delete(dailyPlanItems).where(and(eq(dailyPlanItems.id, itemId), eq(dailyPlanItems.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (e) {

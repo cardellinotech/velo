@@ -103,7 +103,7 @@ export async function PATCH(
 
     const [updated] = await db.update(recurringTaskTemplates)
       .set(updates)
-      .where(eq(recurringTaskTemplates.id, templateId))
+      .where(and(eq(recurringTaskTemplates.id, templateId), eq(recurringTaskTemplates.userId, userId)))
       .returning();
 
     return NextResponse.json(updated);
@@ -133,7 +133,7 @@ export async function DELETE(
       throw new Error("NOT_FOUND");
     }
 
-    await db.delete(recurringTaskTemplates).where(eq(recurringTaskTemplates.id, templateId));
+    await db.delete(recurringTaskTemplates).where(and(eq(recurringTaskTemplates.id, templateId), eq(recurringTaskTemplates.userId, userId)));
 
     return NextResponse.json({ success: true });
   } catch (e) {

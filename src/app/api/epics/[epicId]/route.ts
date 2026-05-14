@@ -58,7 +58,7 @@ export async function PATCH(
 
     const [updated] = await db.update(epics)
       .set(patch)
-      .where(eq(epics.id, epicId))
+      .where(and(eq(epics.id, epicId), eq(epics.userId, userId)))
       .returning();
     return NextResponse.json(updated);
   } catch (e) {

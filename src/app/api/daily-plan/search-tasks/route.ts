@@ -23,35 +23,25 @@ export async function GET(req: NextRequest) {
     const search = url.searchParams.get("search") ?? undefined;
     const date = url.searchParams.get("date") ?? "";
 
-    // Get all active projects for user
-    const activeProjects = await db.select().from(projects)
-      .where(and(eq(projects.userId, userId), eq(projects.status, "active")))
-      .limit(100);
-
-    // Get all non-done tasks from those projects
-    const allTasks: Array<{
-      id: string;
-      title: string;
-      taskType: string;
-      projectName: string;
-      projectId: string;
-    }> = [];
-
-    for (const project of activeProjects) {
-      const projectTasks = await db.select().from(tasks)
-        .where(and(eq(tasks.projectId, project.id), ne(tasks.status, "done")))
-        .limit(500);
-
-      for (const task of projectTasks) {
-        allTasks.push({
-          id: task.id,
-          title: task.title,
-          taskType: task.taskType,
-          projectName: project.name,
-          projectId: task.projectId,
-        });
-      }
-    }
+    // Get all non-done tasks from active projects — single JOIN query, no N+1
+    const allTasks = await db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        taskType: tasks.taskType,
+        projectId: tasks.projectId,
+        projectName: projects.name,
+      })
+      .from(tasks)
+      .innerJoin(projects, eq(tasks.projectId, projects.id))
+      .where(
+        and(
+          eq(tasks.userId, userId),
+          eq(projects.status, "active"),
+          ne(tasks.status, "done"),
+        )
+      )
+      .limit(500);
 
     // Filter by search term
     let filtered = allTasks;
