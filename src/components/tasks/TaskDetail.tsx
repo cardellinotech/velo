@@ -259,6 +259,7 @@ export function TaskDetail({ task, project, onClose }: TaskDetailProps) {
             open={manualEntryOpen}
             onClose={() => { setManualEntryOpen(false); setEditingEntry(null); }}
             taskId={task.id}
+            projectId={task.projectId}
             entry={editingEntry ?? undefined}
           />
 

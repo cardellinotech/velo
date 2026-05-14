@@ -2,8 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import { signOut } from "next-auth/react";
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -32,7 +33,10 @@ const workNavItems = [
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const projects = useQuery(api.projects.listActive);
+  const { data: projects } = useQuery({
+    queryKey: queryKeys.projects.active(),
+    queryFn: () => api.projects.listActive(),
+  });
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -159,10 +163,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </p>
               <ul className="flex flex-col gap-0.5">
                 {projects.map((project) => {
-                  const href = `/projects/${project._id}`;
+                  const href = `/projects/${project.id}`;
                   const active = pathname.startsWith(href);
                   return (
-                    <li key={project._id}>
+                    <li key={project.id}>
                       <Link
                         href={href}
                         onClick={onClose}

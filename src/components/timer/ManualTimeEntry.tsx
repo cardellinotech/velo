@@ -14,6 +14,7 @@ interface ManualTimeEntryProps {
   open: boolean;
   onClose: () => void;
   taskId: string;
+  projectId: string;
   entry?: TimeEntry;
 }
 
@@ -26,7 +27,7 @@ function toTimeStr(ms: number): string {
   return d.toTimeString().slice(0, 5);
 }
 
-export function ManualTimeEntry({ open, onClose, taskId, entry }: ManualTimeEntryProps) {
+export function ManualTimeEntry({ open, onClose, taskId, projectId, entry }: ManualTimeEntryProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -114,7 +115,7 @@ export function ManualTimeEntry({ open, onClose, taskId, entry }: ManualTimeEntr
         // The API requires projectId; we'll pass taskId and let the server resolve it
         await createManual({
           taskId,
-          projectId: "", // server-side will resolve from taskId
+          projectId,
           startTime: start,
           endTime: end,
           description: description.trim() || undefined,

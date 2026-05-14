@@ -1,8 +1,13 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 
 export function useActiveTimer() {
-  return useQuery(api.timeEntries.getActive);
+  return useQuery({
+    queryKey: queryKeys.timeEntries.active(),
+    queryFn: () => api.timeEntries.getActive(),
+    refetchInterval: 5_000,
+  });
 }

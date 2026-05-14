@@ -93,11 +93,10 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
       </div>
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ProjectForm
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        project={{ ...project, _id: project.id } as any}
+        project={project}
       />
     </>
   );
