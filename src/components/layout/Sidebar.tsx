@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { signOut } from "next-auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
@@ -32,7 +32,6 @@ const workNavItems = [
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const { signOut } = useAuthActions();
   const projects = useQuery(api.projects.listActive);
 
   function isActive(href: string) {
@@ -198,7 +197,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       {/* Logout */}
       <div className="border-t border-white/[0.06] p-3">
         <button
-          onClick={() => void signOut()}
+          onClick={() => void signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all duration-150 hover:text-slate-300 hover:bg-white/[0.04]"
         >
           <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />

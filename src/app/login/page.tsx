@@ -1,14 +1,13 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Zap } from "lucide-react";
 
 export default function LoginPage() {
-  const { signIn } = useAuthActions();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,11 +19,19 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signIn" });
-      router.push("/");
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Invalid email or password.");
+      } else {
+        router.push("/");
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong.";
-      setError(message.includes("Invalid") ? "Invalid email or password." : message);
+      setError(message);
     } finally {
       setLoading(false);
     }
