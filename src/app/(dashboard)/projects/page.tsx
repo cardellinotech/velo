@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import { Doc } from "../../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/Button";
 import { ProjectForm } from "@/components/projects/ProjectForm";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -11,6 +11,7 @@ import { FolderKanban, Plus, ArrowRight, Zap, DollarSign, Archive } from "lucide
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
+import type { Project } from "@/types";
 
 const statusConfig = {
   active: {
@@ -25,7 +26,7 @@ const statusConfig = {
   },
 } as const;
 
-function ProjectCard({ project }: { project: Doc<"projects"> }) {
+function ProjectCard({ project }: { project: Project }) {
   const [editOpen, setEditOpen] = useState(false);
   const status = statusConfig[project.status as keyof typeof statusConfig] ?? statusConfig.active;
 
@@ -38,7 +39,7 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <Link
-              href={`/projects/${project._id}`}
+              href={`/projects/${project.id}`}
               className="text-sm font-semibold text-text-primary hover:text-primary transition-colors truncate block"
             >
               {project.name}
@@ -69,7 +70,7 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
 
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/40">
           <Link
-            href={`/projects/${project._id}`}
+            href={`/projects/${project.id}`}
             className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:text-primary-hover transition-colors"
           >
             Open board
@@ -83,7 +84,7 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
               Edit
             </button>
             <Link
-              href={`/projects/${project._id}/settings`}
+              href={`/projects/${project.id}/settings`}
               className="text-[11px] text-text-muted hover:text-text-primary px-2 py-1 rounded-lg hover:bg-surface transition-colors"
             >
               Settings
@@ -92,10 +93,11 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
         </div>
       </div>
 
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ProjectForm
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        project={project}
+        project={{ ...project, _id: project.id } as any}
       />
     </>
   );
@@ -103,7 +105,10 @@ function ProjectCard({ project }: { project: Doc<"projects"> }) {
 
 export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
-  const projects = useQuery(api.projects.listActive);
+  const { data: projects, isLoading } = useQuery({
+    queryKey: queryKeys.projects.active(),
+    queryFn: () => api.projects.listActive(),
+  });
 
   useKeyboardShortcuts({
     p: () => setCreateOpen(true),
@@ -118,7 +123,7 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Projects</h1>
           <p className="text-sm text-text-secondary mt-1">
-            {projects === undefined
+            {isLoading
               ? "Loading…"
               : `${activeCount} active project${activeCount !== 1 ? "s" : ""}`}
           </p>
@@ -138,7 +143,7 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {projects === undefined ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-40 rounded-xl border border-border/60 bg-white animate-pulse">
@@ -151,7 +156,7 @@ export default function ProjectsPage() {
             </div>
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : !projects || projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-5 text-center">
           <div className="relative">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center border border-indigo-100">
@@ -175,7 +180,7 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
-            <ProjectCard key={project._id} project={project} />
+            <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       )}

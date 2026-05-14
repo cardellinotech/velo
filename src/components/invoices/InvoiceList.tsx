@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { formatAmount } from "@/lib/currency";
 import { formatDate } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { FileText, ArrowRight, Send, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import type { Invoice } from "@/types";
 
 type StatusFilter = "all" | "draft" | "sent" | "paid" | "overdue";
 
@@ -56,30 +57,39 @@ function OverdueBadge({ daysOverdue }: { daysOverdue: number }) {
   );
 }
 
+// Extended invoice row type — the API returns projectName as well
+interface InvoiceRowData extends Invoice {
+  projectName?: string | null;
+}
+
 interface InvoiceRowProps {
-  invoice: {
-    _id: Id<"invoices">;
-    invoiceNumber: string;
-    clientName: string;
-    projectName?: string | null;
-    issueDate: number;
-    dueDate: number;
-    total: number;
-    currency: string;
-    status: string;
-  };
+  invoice: InvoiceRowData;
 }
 
 function InvoiceRow({ invoice }: InvoiceRowProps) {
   const router = useRouter();
-  const updateStatus = useMutation(api.invoices.updateStatus);
-  const deleteInvoice = useMutation(api.invoices.deleteInvoice);
+  const queryClient = useQueryClient();
   const [isActing, setIsActing] = useState(false);
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: string) => api.invoices.updateStatus(invoice.id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(invoice.id) });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.invoices.delete(invoice.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+    },
+  });
 
   const now = Date.now();
   const isEffectivelyOverdue =
-    invoice.status === "sent" && invoice.dueDate < now;
-  const daysOverdue = isEffectivelyOverdue
+    invoice.status === "sent" && invoice.dueDate && invoice.dueDate < now;
+  const daysOverdue = isEffectivelyOverdue && invoice.dueDate
     ? Math.floor((now - invoice.dueDate) / (24 * 60 * 60 * 1000))
     : 0;
 
@@ -87,7 +97,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
     e.stopPropagation();
     setIsActing(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "paid" });
+      await updateStatusMutation.mutateAsync("paid");
     } finally {
       setIsActing(false);
     }
@@ -97,7 +107,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
     e.stopPropagation();
     setIsActing(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "sent" });
+      await updateStatusMutation.mutateAsync("sent");
     } finally {
       setIsActing(false);
     }
@@ -107,7 +117,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
     e.stopPropagation();
     setIsActing(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "overdue" });
+      await updateStatusMutation.mutateAsync("overdue");
     } finally {
       setIsActing(false);
     }
@@ -118,7 +128,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
     if (!confirm("Delete this draft invoice? This cannot be undone.")) return;
     setIsActing(true);
     try {
-      await deleteInvoice({ invoiceId: invoice._id });
+      await deleteMutation.mutateAsync();
     } finally {
       setIsActing(false);
     }
@@ -126,7 +136,7 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
 
   return (
     <button
-      onClick={() => router.push(`/invoices/${invoice._id}`)}
+      onClick={() => router.push(`/invoices/${invoice.id}`)}
       className="group flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-xl border border-border/60 bg-white px-4 sm:px-5 py-4 text-left shadow-card hover:shadow-card-hover hover:border-border transition-all duration-200 hover:-translate-y-px w-full"
     >
       {/* Top row on mobile: invoice number + amount + status */}
@@ -244,11 +254,10 @@ function InvoiceRow({ invoice }: InvoiceRowProps) {
 export function InvoiceList() {
   const [activeTab, setActiveTab] = useState<StatusFilter>("all");
 
-  const invoices = useQuery(api.invoices.list, {
-    status: activeTab !== "all" ? activeTab : undefined,
+  const { data: invoices, isLoading } = useQuery({
+    queryKey: queryKeys.invoices.all(activeTab !== "all" ? activeTab : undefined),
+    queryFn: () => api.invoices.list(activeTab !== "all" ? { status: activeTab } : undefined),
   });
-
-  const isLoading = invoices === undefined;
 
   return (
     <div className="flex flex-col gap-5">
@@ -287,7 +296,7 @@ export function InvoiceList() {
             </div>
           ))}
         </div>
-      ) : invoices.length === 0 ? (
+      ) : !invoices || invoices.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/60 bg-surface py-16">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500">
             <FileText className="w-6 h-6" />
@@ -312,7 +321,7 @@ export function InvoiceList() {
       ) : (
         <div className="flex flex-col gap-2">
           {invoices.map((invoice) => (
-            <InvoiceRow key={invoice._id} invoice={invoice} />
+            <InvoiceRow key={invoice.id} invoice={invoice as InvoiceRowData} />
           ))}
         </div>
       )}

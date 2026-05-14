@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
@@ -14,8 +14,8 @@ import { RefreshCw } from "lucide-react";
 // ---------------------------------------------------------------------------
 
 interface CodaSyncConfig {
-  _id: Id<"codaSyncConfigs">;
-  projectId: Id<"projects">;
+  id?: string;
+  projectId: string;
   codaApiToken: string;
   codaDocId: string;
   codaTableId: string;
@@ -26,14 +26,14 @@ interface CodaSyncConfig {
     logDate: string;
     user: string;
   };
-  taskMappings: { codaValue: string; taskId: Id<"tasks"> }[];
+  taskMappings: { codaValue: string; taskId: string }[];
   lastSyncAt?: number;
   lastSyncCount?: number;
 }
 
 interface MappingEntry {
   codaValue: string;
-  taskId: Id<"tasks"> | "";
+  taskId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,11 +52,23 @@ const selectClasses = cn(
 
 export function CodaSyncMappings({ config }: { config: CodaSyncConfig }) {
   const toast = useToast();
-  const tasks = useQuery(api.tasks.listByProject, {
-    projectId: config.projectId,
+
+  const { data: tasks } = useQuery({
+    queryKey: queryKeys.tasks.byProject(config.projectId),
+    queryFn: () => api.tasks.listByProject(config.projectId),
+    enabled: !!config.projectId,
   });
-  const saveConfigMutation = useMutation(api.codaSync.saveConfig);
-  const fetchValuesAction = useAction(api.codaSync.fetchUniqueCodaValues);
+
+  const saveConfigMutation = useMutation({
+    mutationFn: (data: unknown) => api.coda.saveConfig(config.projectId, data),
+    onSuccess: () => {
+      // Config will be re-fetched by parent
+    },
+  });
+
+  const fetchValuesMutation = useMutation({
+    mutationFn: (data: unknown) => api.coda.fetchValues(data),
+  });
 
   const [codaValues, setCodaValues] = useState<string[]>([]);
   const [loadingValues, setLoadingValues] = useState(false);
@@ -84,17 +96,17 @@ export function CodaSyncMappings({ config }: { config: CodaSyncConfig }) {
   async function handleLoadValues() {
     setLoadingValues(true);
     try {
-      const result = await fetchValuesAction({
+      const result = await fetchValuesMutation.mutateAsync({
         codaApiToken: config.codaApiToken,
         codaDocId: config.codaDocId,
         codaTableId: config.codaTableId,
         columnName: config.columnMapping.task,
-      });
-      if (result.success) {
+      }) as { success: boolean; values?: string[]; error?: string };
+      if (result.success && result.values) {
         setCodaValues(result.values);
         setValuesLoaded(false); // trigger re-init of mappings
       } else {
-        toast.error(result.error);
+        toast.error(result.error ?? "Fehler beim Laden der Coda-Werte.");
       }
     } catch {
       toast.error("Fehler beim Laden der Coda-Werte.");
@@ -110,10 +122,10 @@ export function CodaSyncMappings({ config }: { config: CodaSyncConfig }) {
         .filter((m) => m.taskId)
         .map((m) => ({
           codaValue: m.codaValue,
-          taskId: m.taskId as Id<"tasks">,
+          taskId: m.taskId,
         }));
 
-      await saveConfigMutation({
+      await saveConfigMutation.mutateAsync({
         projectId: config.projectId,
         codaApiToken: config.codaApiToken,
         codaDocId: config.codaDocId,
@@ -129,7 +141,7 @@ export function CodaSyncMappings({ config }: { config: CodaSyncConfig }) {
     }
   }
 
-  function updateMapping(index: number, taskId: Id<"tasks"> | "") {
+  function updateMapping(index: number, taskId: string) {
     setMappings((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], taskId };
@@ -188,17 +200,12 @@ export function CodaSyncMappings({ config }: { config: CodaSyncConfig }) {
                       <td className="px-3 py-2">
                         <select
                           value={entry.taskId}
-                          onChange={(e) =>
-                            updateMapping(
-                              i,
-                              e.target.value as Id<"tasks"> | ""
-                            )
-                          }
+                          onChange={(e) => updateMapping(i, e.target.value)}
                           className={selectClasses}
                         >
                           <option value="">— Task wählen —</option>
                           {tasks.map((t) => (
-                            <option key={t._id} value={t._id}>
+                            <option key={t.id} value={t.id}>
                               {t.title}
                             </option>
                           ))}

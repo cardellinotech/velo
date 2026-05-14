@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/hooks/useToast";
@@ -16,12 +16,44 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
-  Loader2,
 } from "lucide-react";
 import { CodaSyncMappings } from "./CodaSyncMappings";
 
 // ---------------------------------------------------------------------------
-// Shared layout helpers (same pattern as BusinessSettingsForm)
+// Types
+// ---------------------------------------------------------------------------
+
+interface CodaSyncConfig {
+  id?: string;
+  projectId: string;
+  codaApiToken: string;
+  codaDocId: string;
+  codaTableId: string;
+  columnMapping: {
+    task: string;
+    notes: string;
+    duration: string;
+    logDate: string;
+    user: string;
+  };
+  taskMappings: { codaValue: string; taskId: string }[];
+  codaUserValue?: string;
+  lastSyncAt?: number;
+  lastSyncCount?: number;
+  isSyncing?: boolean;
+}
+
+interface SyncHistoryEntry {
+  id: string;
+  syncedAt: number;
+  entriesImported: number;
+  entriesSkipped: number;
+  errors?: { row: number; message: string }[];
+  status: "success" | "partial" | "failed";
+}
+
+// ---------------------------------------------------------------------------
+// Shared layout helpers
 // ---------------------------------------------------------------------------
 
 function SectionCard({
@@ -137,19 +169,54 @@ function CountBadge({
 export function CodaSyncSettings({
   projectId,
 }: {
-  projectId: Id<"projects">;
+  projectId: string;
 }) {
   const toast = useToast();
-  const config = useQuery(api.codaSync.getConfig, { projectId });
-  const syncHistory = useQuery(api.codaSync.getSyncHistory, {
-    projectId,
-    limit: 10,
+  const queryClient = useQueryClient();
+
+  const { data: config, isLoading: configLoading } = useQuery({
+    queryKey: queryKeys.coda.config(projectId),
+    queryFn: () => api.coda.getConfig(projectId),
+    enabled: !!projectId,
   });
-  const saveConfigMutation = useMutation(api.codaSync.saveConfig);
-  const deleteConfigMutation = useMutation(api.codaSync.deleteConfig);
-  const testConnectionAction = useAction(api.codaSync.testConnection);
-  const fetchValuesAction = useAction(api.codaSync.fetchUniqueCodaValues);
-  const runSyncAction = useAction(api.codaSync.runSync);
+
+  const { data: syncHistoryRaw } = useQuery({
+    queryKey: queryKeys.coda.history(projectId),
+    queryFn: () => api.coda.getHistory(projectId),
+    enabled: !!projectId,
+  });
+
+  const syncHistory = syncHistoryRaw as SyncHistoryEntry[] | undefined;
+
+  const saveConfigMutation = useMutation({
+    mutationFn: (data: unknown) => api.coda.saveConfig(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.coda.config(projectId) });
+    },
+  });
+
+  const deleteConfigMutation = useMutation({
+    mutationFn: () => api.coda.deleteConfig(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.coda.config(projectId) });
+    },
+  });
+
+  const testConnectionMutation = useMutation({
+    mutationFn: (data: unknown) => api.coda.testConnection(data),
+  });
+
+  const fetchValuesMutation = useMutation({
+    mutationFn: (data: unknown) => api.coda.fetchValues(data),
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: () => api.coda.sync(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.coda.history(projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.coda.config(projectId) });
+    },
+  });
 
   // Connection form
   const [apiToken, setApiToken] = useState("");
@@ -188,40 +255,42 @@ export function CodaSyncSettings({
   const [codaUsers, setCodaUsers] = useState<string[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  const typedConfig = config as CodaSyncConfig | null | undefined;
+
   // Initialize form from existing config
   const [initialized, setInitialized] = useState(false);
   useEffect(() => {
-    if (config && !initialized) {
-      setApiToken(config.codaApiToken);
-      setDocId(config.codaDocId);
-      setTableId(config.codaTableId);
-      setTaskColumn(config.columnMapping.task);
-      setDurationColumn(config.columnMapping.duration);
-      setDateColumn(config.columnMapping.logDate);
-      setNotesColumn(config.columnMapping.notes);
-      setUserColumn(config.columnMapping.user);
+    if (typedConfig && !initialized) {
+      setApiToken(typedConfig.codaApiToken);
+      setDocId(typedConfig.codaDocId);
+      setTableId(typedConfig.codaTableId);
+      setTaskColumn(typedConfig.columnMapping.task);
+      setDurationColumn(typedConfig.columnMapping.duration);
+      setDateColumn(typedConfig.columnMapping.logDate);
+      setNotesColumn(typedConfig.columnMapping.notes);
+      setUserColumn(typedConfig.columnMapping.user);
       setInitialized(true);
     }
-  }, [config, initialized]);
+  }, [typedConfig, initialized]);
 
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
 
   async function handleLoadUsers() {
-    if (!config) return;
+    if (!typedConfig) return;
     setLoadingUsers(true);
     try {
-      const result = await fetchValuesAction({
-        codaApiToken: config.codaApiToken,
-        codaDocId: config.codaDocId,
-        codaTableId: config.codaTableId,
-        columnName: config.columnMapping.user,
-      });
-      if (result.success) {
+      const result = await fetchValuesMutation.mutateAsync({
+        codaApiToken: typedConfig.codaApiToken,
+        codaDocId: typedConfig.codaDocId,
+        codaTableId: typedConfig.codaTableId,
+        columnName: typedConfig.columnMapping.user,
+      }) as { success: boolean; values?: string[]; error?: string };
+      if (result.success && result.values) {
         setCodaUsers(result.values);
       } else {
-        toast.error(result.error);
+        toast.error(result.error ?? "Fehler beim Laden der Coda-User.");
       }
     } catch {
       toast.error("Fehler beim Laden der Coda-User.");
@@ -231,15 +300,15 @@ export function CodaSyncSettings({
   }
 
   async function handleSaveUserFilter(value: string) {
-    if (!config) return;
+    if (!typedConfig) return;
     try {
-      await saveConfigMutation({
+      await saveConfigMutation.mutateAsync({
         projectId,
-        codaApiToken: config.codaApiToken,
-        codaDocId: config.codaDocId,
-        codaTableId: config.codaTableId,
-        columnMapping: config.columnMapping,
-        taskMappings: config.taskMappings,
+        codaApiToken: typedConfig.codaApiToken,
+        codaDocId: typedConfig.codaDocId,
+        codaTableId: typedConfig.codaTableId,
+        columnMapping: typedConfig.columnMapping,
+        taskMappings: typedConfig.taskMappings,
         codaUserValue: value || undefined,
       });
       toast.success(
@@ -257,11 +326,11 @@ export function CodaSyncSettings({
     setTesting(true);
     setTestResult(null);
     try {
-      const result = await testConnectionAction({
+      const result = await testConnectionMutation.mutateAsync({
         codaApiToken: apiToken.trim(),
         codaDocId: docId.trim(),
         codaTableId: tableId.trim(),
-      });
+      }) as { success: true; columns: string[] } | { success: false; error: string };
       setTestResult(result);
     } catch {
       setTestResult({ success: false, error: "Verbindung fehlgeschlagen." });
@@ -277,7 +346,7 @@ export function CodaSyncSettings({
     }
     setSaving(true);
     try {
-      await saveConfigMutation({
+      await saveConfigMutation.mutateAsync({
         projectId,
         codaApiToken: apiToken.trim(),
         codaDocId: docId.trim(),
@@ -289,8 +358,8 @@ export function CodaSyncSettings({
           notes: notesColumn,
           user: userColumn,
         },
-        taskMappings: config?.taskMappings ?? [],
-        codaUserValue: config?.codaUserValue ?? undefined,
+        taskMappings: typedConfig?.taskMappings ?? [],
+        codaUserValue: typedConfig?.codaUserValue ?? undefined,
       });
       toast.success("Konfiguration gespeichert.");
       setTestResult(null);
@@ -304,7 +373,7 @@ export function CodaSyncSettings({
   async function handleDeleteConfig() {
     setDeleting(true);
     try {
-      await deleteConfigMutation({ projectId });
+      await deleteConfigMutation.mutateAsync();
       toast.success("Konfiguration gelöscht.");
       // Reset local state
       setApiToken("");
@@ -328,7 +397,11 @@ export function CodaSyncSettings({
   async function handleSync() {
     setSyncing(true);
     try {
-      const result = await runSyncAction({ projectId });
+      const result = await syncMutation.mutateAsync() as {
+        imported: number;
+        skipped: number;
+        errors: string[];
+      };
       const parts: string[] = [];
       if (result.imported > 0) parts.push(`${result.imported} Einträge importiert`);
       if (result.skipped > 0) parts.push(`${result.skipped} übersprungen`);
@@ -345,7 +418,7 @@ export function CodaSyncSettings({
   // Loading state
   // ---------------------------------------------------------------------------
 
-  if (config === undefined) {
+  if (configLoading) {
     return (
       <div className="flex flex-col gap-5 max-w-xl animate-pulse">
         <div className="rounded-xl border border-border/60 overflow-hidden">
@@ -364,8 +437,8 @@ export function CodaSyncSettings({
   // Connected state (config exists)
   // ---------------------------------------------------------------------------
 
-  if (config) {
-    const hasMappings = config.taskMappings.length > 0;
+  if (typedConfig) {
+    const hasMappings = typedConfig.taskMappings.length > 0;
 
     return (
       <div className="flex flex-col gap-5 max-w-xl">
@@ -381,18 +454,18 @@ export function CodaSyncSettings({
                 Verbunden
               </span>
               <span className="text-xs text-text-secondary">
-                Doc: {config.codaDocId}
+                Doc: {typedConfig.codaDocId}
               </span>
             </div>
           </div>
 
           {/* Last sync info */}
-          {config.lastSyncAt && (
+          {typedConfig.lastSyncAt && (
             <div className="text-xs text-text-secondary">
               Letzte Synchronisierung:{" "}
-              {new Date(config.lastSyncAt).toLocaleString("de-DE")}
-              {config.lastSyncCount !== undefined &&
-                ` — ${config.lastSyncCount} Einträge`}
+              {new Date(typedConfig.lastSyncAt).toLocaleString("de-DE")}
+              {typedConfig.lastSyncCount !== undefined &&
+                ` — ${typedConfig.lastSyncCount} Einträge`}
             </div>
           )}
 
@@ -401,7 +474,7 @@ export function CodaSyncSettings({
             <FieldLabel>Coda-User filtern</FieldLabel>
             {codaUsers.length > 0 ? (
               <select
-                value={config.codaUserValue ?? ""}
+                value={typedConfig.codaUserValue ?? ""}
                 onChange={(e) => handleSaveUserFilter(e.target.value)}
                 className={selectClasses}
               >
@@ -412,10 +485,10 @@ export function CodaSyncSettings({
                   </option>
                 ))}
               </select>
-            ) : config.codaUserValue ? (
+            ) : typedConfig.codaUserValue ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-text-primary">
-                  {config.codaUserValue}
+                  {typedConfig.codaUserValue}
                 </span>
                 <button
                   type="button"
@@ -446,10 +519,10 @@ export function CodaSyncSettings({
             <Button
               onClick={handleSync}
               loading={syncing}
-              disabled={syncing || !!config.isSyncing}
+              disabled={syncing || !!typedConfig.isSyncing}
               className="w-full sm:w-auto"
             >
-              {config.isSyncing
+              {typedConfig.isSyncing
                 ? "Synchronisierung läuft..."
                 : syncing
                   ? "Synchronisiere..."
@@ -470,7 +543,7 @@ export function CodaSyncSettings({
         </SectionCard>
 
         {/* Mappings section */}
-        <CodaSyncMappings config={{ ...config, projectId }} />
+        <CodaSyncMappings config={{ ...typedConfig, projectId }} />
 
         {/* Sync history */}
         <SyncHistory
@@ -734,16 +807,7 @@ function SyncHistory({
   expandedLogId,
   setExpandedLogId,
 }: {
-  syncHistory:
-    | {
-        _id: string;
-        syncedAt: number;
-        entriesImported: number;
-        entriesSkipped: number;
-        errors?: { row: number; message: string }[];
-        status: "success" | "partial" | "failed";
-      }[]
-    | undefined;
+  syncHistory: SyncHistoryEntry[] | undefined;
   historyExpanded: boolean;
   setHistoryExpanded: (v: boolean) => void;
   expandedLogId: string | null;
@@ -779,19 +843,19 @@ function SyncHistory({
           {historyExpanded && (
             <div className="flex flex-col gap-2">
               {syncHistory.map((entry) => {
-                const isExpanded = expandedLogId === entry._id;
+                const isExpanded = expandedLogId === entry.id;
                 const hasErrors =
                   entry.errors && entry.errors.length > 0;
 
                 return (
                   <div
-                    key={entry._id}
+                    key={entry.id}
                     className="rounded-lg border border-border/50 overflow-hidden"
                   >
                     <button
                       type="button"
                       onClick={() =>
-                        setExpandedLogId(isExpanded ? null : entry._id)
+                        setExpandedLogId(isExpanded ? null : entry.id)
                       }
                       className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-surface/50 transition-colors"
                     >

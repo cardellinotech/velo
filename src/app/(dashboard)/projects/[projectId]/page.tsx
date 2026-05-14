@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import Link from "next/link";
 import { Settings, Layers } from "lucide-react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -22,8 +22,14 @@ const DEFAULT_FILTERS: KanbanFilterState = {
 
 export default function ProjectBoardPage() {
   const params = useParams();
-  const projectId = params.projectId as Id<"projects">;
-  const project = useQuery(api.projects.get, { projectId });
+  const projectId = params.projectId as string;
+
+  const { data: project, isLoading } = useQuery({
+    queryKey: queryKeys.projects.detail(projectId),
+    queryFn: () => api.projects.get(projectId),
+    enabled: !!projectId,
+  });
+
   const { registerProject, unregisterProject } = useCreateTask();
 
   const [filters, setFilters] = useState<KanbanFilterState>(DEFAULT_FILTERS);
@@ -46,7 +52,7 @@ export default function ProjectBoardPage() {
     N: () => setTaskFormOpen(true),
   }, project !== undefined && project !== null);
 
-  if (project === undefined) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6 animate-pulse">
         <div className="flex items-end justify-between">
@@ -68,7 +74,7 @@ export default function ProjectBoardPage() {
     );
   }
 
-  if (project === null) {
+  if (!project) {
     return <div className="text-sm text-text-secondary">Project not found.</div>;
   }
 

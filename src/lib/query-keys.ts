@@ -31,12 +31,14 @@ export const queryKeys = {
     searchTasks: (query: string) => ["daily-plan", "search", query] as const,
   },
   invoices: {
-    all: () => ["invoices"] as const,
+    all: (status?: string) => (status ? ["invoices", { status }] : ["invoices"]) as readonly unknown[],
     detail: (id: string) => ["invoices", id] as const,
   },
   billing: {
-    entries: () => ["billing", "entries"] as const,
-    summary: () => ["billing", "summary"] as const,
+    entries: (params?: { startDate?: number; endDate?: number; projectId?: string }) =>
+      ["billing", "entries", params] as const,
+    summary: (params?: { startDate?: number; endDate?: number; projectId?: string }) =>
+      ["billing", "summary", params] as const,
   },
   userSettings: {
     all: () => ["user-settings"] as const,

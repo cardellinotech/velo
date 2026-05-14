@@ -1,21 +1,30 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
-import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { EpicList } from "@/components/epics/EpicList";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function EpicsPage() {
   const params = useParams();
-  const projectId = params.projectId as Id<"projects">;
+  const projectId = params.projectId as string;
 
-  const project = useQuery(api.projects.get, { projectId });
-  const epics = useQuery(api.epics.listByProject, { projectId });
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: queryKeys.projects.detail(projectId),
+    queryFn: () => api.projects.get(projectId),
+    enabled: !!projectId,
+  });
 
-  if (project === undefined || epics === undefined) {
+  const { data: epics, isLoading: epicsLoading } = useQuery({
+    queryKey: queryKeys.epics.byProject(projectId),
+    queryFn: () => api.epics.listByProject(projectId),
+    enabled: !!projectId,
+  });
+
+  if (projectLoading || epicsLoading) {
     return (
       <div className="flex flex-col gap-5 max-w-2xl animate-pulse">
         <div className="flex items-center gap-3">
@@ -32,7 +41,7 @@ export default function EpicsPage() {
     );
   }
 
-  if (project === null) {
+  if (!project) {
     return <div className="text-sm text-text-secondary">Project not found.</div>;
   }
 
@@ -52,7 +61,7 @@ export default function EpicsPage() {
         </div>
       </div>
 
-      <EpicList epics={epics} projectId={projectId} />
+      <EpicList epics={epics ?? []} projectId={projectId} />
     </div>
   );
 }

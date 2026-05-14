@@ -120,7 +120,7 @@ export const api = {
       fetchJson<TimeEntry[]>(`/api/time-entries/range?start=${start}&end=${end}`),
     listByTask: (taskId: string) =>
       fetchJson<TimeEntry[]>(`/api/time-entries/by-task/${taskId}`),
-    start: (data: { taskId: string; projectId: string }) =>
+    start: (data: { taskId: string }) =>
       fetchJson<TimeEntry>("/api/time-entries/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,7 +207,10 @@ export const api = {
       }),
   },
   invoices: {
-    list: () => fetchJson<Invoice[]>("/api/invoices"),
+    list: (params?: { status?: string }) => {
+      const qs = params?.status ? `?status=${params.status}` : "";
+      return fetchJson<Invoice[]>(`/api/invoices${qs}`);
+    },
     get: (id: string) => fetchJson<Invoice>(`/api/invoices/${id}`),
     create: (data: unknown) =>
       fetchJson<Invoice>("/api/invoices", {
@@ -231,8 +234,22 @@ export const api = {
       }),
   },
   billing: {
-    entries: () => fetchJson<BillingEntry[]>("/api/billing/entries"),
-    summary: () => fetchJson<unknown>("/api/billing/summary"),
+    entries: (params?: { startDate?: number; endDate?: number; projectId?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.startDate !== undefined) qs.set("startDate", String(params.startDate));
+      if (params?.endDate !== undefined) qs.set("endDate", String(params.endDate));
+      if (params?.projectId) qs.set("projectId", params.projectId);
+      const q = qs.toString();
+      return fetchJson<BillingEntry[]>(`/api/billing/entries${q ? `?${q}` : ""}`);
+    },
+    summary: (params?: { startDate?: number; endDate?: number; projectId?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.startDate !== undefined) qs.set("startDate", String(params.startDate));
+      if (params?.endDate !== undefined) qs.set("endDate", String(params.endDate));
+      if (params?.projectId) qs.set("projectId", params.projectId);
+      const q = qs.toString();
+      return fetchJson<unknown>(`/api/billing/summary${q ? `?${q}` : ""}`);
+    },
   },
   userSettings: {
     get: () => fetchJson<UserSettings>("/api/user-settings"),
