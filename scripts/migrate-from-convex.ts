@@ -99,8 +99,8 @@ async function migrateProjects() {
       hourlyRate: numToStr(r.hourlyRate),
       currency: r.currency ?? null,
       status: r.status ?? "active",
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -123,8 +123,8 @@ async function migrateEpics() {
       description: r.description ?? null,
       status: r.status ?? "open",
       color: r.color ?? null,
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -152,11 +152,11 @@ async function migrateRecurringTaskTemplates() {
       recurrence: r.recurrenceType ?? r.recurrence,
       dayOfWeek: r.dayOfWeek ?? null,
       dayOfMonth: r.dayOfMonth ?? null,
-      nextDueDate: typeof r.nextDueDate === "number" ? r.nextDueDate : r._creationTime,
-      lastCreatedAt: r.lastCreatedAt ?? null,
+      nextDueDate: typeof r.nextDueDate === "number" ? Math.round(r.nextDueDate) : Math.round(r._creationTime),
+      lastCreatedAt: r.lastCreatedAt != null ? Math.round(r.lastCreatedAt) : null,
       isActive: r.isActive ?? true,
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -183,8 +183,8 @@ async function migrateTasks() {
       priority: r.priority ?? "medium",
       order: r.order ?? 0,
       recurringTemplateId: maybeMapId(r.recurringTemplateId),
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -204,12 +204,12 @@ async function migrateTimeEntries() {
       taskId: mapId(r.taskId),
       projectId: mapId(r.projectId),
       userId: mapId(r.userId),
-      startTime: r.startTime,
-      endTime: r.endTime ?? null, // null = running timer
+      startTime: Math.round(r.startTime),
+      endTime: r.endTime != null ? Math.round(r.endTime) : null, // null = running timer
       duration: r.duration ?? null,
       description: r.description ?? null,
       isManual: r.isManual ?? false,
-      createdAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -231,8 +231,8 @@ async function migrateInvoices() {
       invoiceNumber: r.invoiceNumber,
       status: r.status ?? "draft",
       currency: r.currency,
-      issueDate: r.issueDate,
-      dueDate: r.dueDate,
+      issueDate: Math.round(r.issueDate),
+      dueDate: r.dueDate != null ? Math.round(r.dueDate) : null,
       clientName: r.clientName,
       clientAddress: r.clientAddress ?? null,
       senderName: r.senderName,
@@ -249,10 +249,10 @@ async function migrateInvoices() {
       taxAmount: numToStr(r.taxAmount),
       total: numToStr(r.total) ?? "0",
       notes: r.notes ?? null,
-      periodStart: r.periodStart,
-      periodEnd: r.periodEnd,
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      periodStart: r.periodStart != null ? Math.round(r.periodStart) : null,
+      periodEnd: r.periodEnd != null ? Math.round(r.periodEnd) : null,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -276,7 +276,7 @@ async function migrateDailyPlanItems() {
       projectName: r.projectName ?? null,
       isCompleted: r.isCompleted ?? false,
       order: r.order ?? 0,
-      createdAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -302,11 +302,11 @@ async function migrateCodaSyncConfigs() {
       projectMappings: r.projectMappings ?? [],
       taskMappings: r.taskMappings ?? [],
       codaUserValue: r.codaUserValue ?? null,
-      lastSyncAt: r.lastSyncAt ?? null,
+      lastSyncAt: r.lastSyncAt != null ? Math.round(r.lastSyncAt) : null,
       lastSyncCount: r.lastSyncCount ?? null,
       isSyncing: r.isSyncing ?? false,
-      createdAt: r._creationTime,
-      updatedAt: r._creationTime,
+      createdAt: Math.round(r._creationTime),
+      updatedAt: Math.round(r._creationTime),
     });
     count++;
   }
@@ -326,7 +326,7 @@ async function migrateCodaSyncLog() {
       userId: mapId(r.userId),
       // Convex field: configId maps to codaSyncConfigs
       configId: mapId(r.configId),
-      syncedAt: r.syncedAt,
+      syncedAt: Math.round(r.syncedAt),
       entriesImported: r.entriesImported ?? 0,
       entriesSkipped: r.entriesSkipped ?? 0,
       errors: r.errors ?? null,
@@ -369,8 +369,31 @@ async function migrateUserSettings() {
 // Main
 // ---------------------------------------------------------------------------
 
+async function truncateAll() {
+  console.log("Truncating existing data (reverse FK order)...");
+  // Reverse FK order: children before parents
+  await client`TRUNCATE TABLE
+    coda_sync_log,
+    coda_sync_configs,
+    user_settings,
+    daily_plan_items,
+    invoices,
+    time_entries,
+    tasks,
+    recurring_task_templates,
+    epics,
+    projects,
+    sessions,
+    accounts,
+    users
+    CASCADE`;
+  console.log("  Done.\n");
+}
+
 async function main() {
   console.log("Starting Convex → PostgreSQL migration...\n");
+
+  await truncateAll();
 
   // FK dependency order: parents before children
   await migrateUsers();
