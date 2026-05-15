@@ -2,21 +2,20 @@
 
 import { memo } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Task } from "@/types";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 import { TimerControl } from "@/components/timer/TimerControl";
 import { TimerDisplay } from "@/components/timer/TimerDisplay";
 import { useTimer } from "@/hooks/useTimer";
 import { PRIORITIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Repeat } from "lucide-react";
 
 interface TaskCardProps {
-  task: Doc<"tasks">;
+  task: Task;
   index: number;
   epicName?: string;
   epicColor?: string;
-  onTaskClick?: (taskId: Id<"tasks">) => void;
+  onTaskClick?: (taskId: string) => void;
 }
 
 const priorityBorderColors: Record<string, string> = {
@@ -35,17 +34,17 @@ const priorityTextColors: Record<string, string> = {
 
 export const TaskCard = memo(function TaskCard({ task, index, epicName, epicColor, onTaskClick }: TaskCardProps) {
   const priority = PRIORITIES[task.priority];
-  const { isRunning, activeEntry } = useTimer(task._id);
+  const { isRunning, activeEntry } = useTimer(task.id);
 
   return (
-    <Draggable draggableId={task._id} index={index}>
+    <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           role="listitem"
-          onClick={() => !snapshot.isDragging && onTaskClick?.(task._id)}
+          onClick={() => !snapshot.isDragging && onTaskClick?.(task.id)}
           aria-label={`${task.title} — ${task.taskType}, ${priority.label} priority`}
           style={{ willChange: "transform", ...provided.draggableProps.style }}
           className={cn(
@@ -85,12 +84,6 @@ export const TaskCard = memo(function TaskCard({ task, index, epicName, epicColo
                 </span>
               )}
 
-              {task.recurringTemplateId && (
-                <span title="Created from recurring template">
-                  <Repeat className="w-3 h-3 text-slate-400" aria-hidden="true" />
-                </span>
-              )}
-
               <span className={cn(
                 "ml-auto text-[11px] font-medium",
                 priorityTextColors[task.priority] ?? "text-slate-400"
@@ -110,7 +103,7 @@ export const TaskCard = memo(function TaskCard({ task, index, epicName, epicColo
                 <span />
               )}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                <TimerControl taskId={task._id} variant="compact" />
+                <TimerControl taskId={task.id} variant="compact" />
               </div>
             </div>
           </div>

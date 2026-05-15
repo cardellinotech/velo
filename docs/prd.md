@@ -337,6 +337,36 @@ Each instance created by a template is a normal `tasks` row with an added `recur
 | order | number | Sort order within the day (drag to reorder) |
 | createdAt | number | Timestamp |
 
+#### codaSyncConfigs
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"codaSyncConfigs"> | Auto-generated |
+| userId | Id<"users"> | Owner |
+| codaApiToken | string | Coda API token (encrypted at rest) |
+| codaDocId | string | Coda document ID |
+| codaTableId | string | Coda table ID containing time entries |
+| columnMapping | object | Maps Coda column names to Velo fields: { task: string, notes: string, duration: string, logDate: string, user: string } |
+| projectMappings | array | Array of { codaValue: string, projectId: Id<"projects"> } — maps Coda task/project strings to Velo projects |
+| taskMappings | array | Array of { codaValue: string, taskId: Id<"tasks"> } — maps Coda task strings to Velo tasks |
+| lastSyncAt | number? | Timestamp of last successful sync |
+| lastSyncCount | number? | Number of entries imported in last sync |
+| createdAt | number | Timestamp |
+| updatedAt | number | Timestamp |
+
+#### codaSyncLog
+
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | Id<"codaSyncLog"> | Auto-generated |
+| userId | Id<"users"> | Owner |
+| configId | Id<"codaSyncConfigs"> | Which sync config was used |
+| syncedAt | number | Timestamp of sync execution |
+| entriesImported | number | How many new time entries were created |
+| entriesSkipped | number | How many were skipped (duplicates or unmapped) |
+| errors | array? | Array of { row: number, message: string } for failed rows |
+| status | "success" \| "partial" \| "failed" | Sync result |
+
 ### Relationships
 
 ```mermaid
@@ -354,6 +384,10 @@ erDiagram
     recurringTaskTemplates ||--o{ tasks : "generates"
     users ||--o{ dailyPlanItems : "plans"
     tasks ||--o{ dailyPlanItems : "optionally linked"
+    users ||--o{ codaSyncConfigs : "configures"
+    codaSyncConfigs ||--o{ codaSyncLog : "produces"
+    codaSyncConfigs }o--o{ projects : "maps to"
+    codaSyncConfigs }o--o{ tasks : "maps to"
 ```
 
 ### Indexes
@@ -394,6 +428,14 @@ recurringTaskTemplates: defineTable({...})
 
 dailyPlanItems: defineTable({...})
   .index("by_userId_date", ["userId", "date"]),
+
+codaSyncConfigs: defineTable({...})
+  .index("by_userId", ["userId"]),
+
+codaSyncLog: defineTable({...})
+  .index("by_userId", ["userId"])
+  .index("by_configId", ["configId"])
+  .index("by_configId_syncedAt", ["configId", "syncedAt"]),
 
 // Updated tasks table — added recurringTemplateId
 tasks: defineTable({...})
@@ -533,6 +575,23 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | `dailyPlan.remove` | { itemId } | Remove item from day plan. Does NOT delete the linked task. |
 | `dailyPlan.copyToDate` | { fromDate, toDate } | Copy all incomplete items from one date to another (e.g. roll over unfinished work). |
 
+#### Coda Sync
+| Query | Args | Returns | Auth |
+|-------|------|---------|------|
+| `codaSync.getConfig` | — | CodaSyncConfig for current user (or null) | Required |
+| `codaSync.getSyncHistory` | { limit? } | CodaSyncLog[] ordered by syncedAt desc | Required |
+
+| Mutation | Args | Effect |
+|----------|------|--------|
+| `codaSync.saveConfig` | { codaApiToken, codaDocId, codaTableId, columnMapping, projectMappings, taskMappings } | Create or update sync configuration |
+| `codaSync.deleteConfig` | — | Delete sync config and all sync logs for current user |
+| `codaSync.testConnection` | { codaApiToken, codaDocId, codaTableId } | Verify Coda API credentials and table access. Returns column names from the table for mapping UI. |
+
+#### Coda Sync (Convex Action — uses Node.js runtime for HTTP calls)
+| Action | Args | Effect |
+|--------|------|--------|
+| `codaSync.runSync` | — | Fetches rows from Coda API, maps to Velo projects/tasks via config, creates timeEntries, skips duplicates (same taskId + startTime), logs result to codaSyncLog. Returns { imported: number, skipped: number, errors: string[] }. |
+
 ---
 
 ## 5. User Stories
@@ -597,6 +656,10 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 - **As a** freelancer, **I want to** plan my next workday by picking tasks and adding notes, **so that** I start each day knowing exactly what to focus on and in what order.
 - **Acceptance criteria:** Dedicated "My Day" page. Can add existing project tasks via search or picker. Can add free-text items. Drag to reorder. Check items off. Navigate between dates. Carry over incomplete items to the next day.
 
+### US-017: Coda Time Sync
+- **As a** freelancer who tracks time in Coda, **I want to** import my Coda time entries into Velo with one click, **so that** my billing and invoices include all tracked hours without manual re-entry.
+- **Acceptance criteria:** Can configure Coda API connection (API token, doc ID, table ID). Can map Coda columns to Velo fields. Can map Coda task/project values to existing Velo projects and tasks. Manual "Sync now" button fetches new entries and creates time entries. Duplicate entries are detected and skipped. Sync history shows past imports with counts.
+
 ### US-015: Authentication
 - **As a** user, **I want to** securely log in, **so that** my data is protected.
 - **Acceptance criteria:** Can sign up and log in via Convex Auth. Unauthenticated users are redirected to login. All data is scoped to the authenticated user.
@@ -639,6 +702,10 @@ All data access happens through Convex queries (reads) and mutations (writes). N
 | FR-028 | Task picker for daily plan | P1 | Add existing tasks to daily plan | Search across all active project tasks (not done). Shows task title, project name, task type badge. Prevents adding duplicates for same date. |
 | FR-029 | Free-text plan items | P1 | Add notes/reminders to daily plan | Quick-add input at top/bottom of plan. No project link needed. Useful for meetings, calls, admin tasks. |
 | FR-030 | Daily plan carry-over | P2 | Roll incomplete items to next day | "Carry over" button copies all unchecked items to the next day. Useful for unfinished work. |
+| FR-031 | Coda sync configuration | P2 | Configure Coda API connection and field mapping | Settings page section: API token input, doc/table ID fields, column mapping dropdowns (auto-populated after connection test), project/task mapping table. Save/test/delete config. |
+| FR-032 | Coda sync execution | P2 | Import time entries from Coda on demand | "Sync now" button triggers Convex action. Fetches Coda rows, maps to Velo time entries, creates entries for mapped tasks, skips duplicates (same task + date + duration). Shows progress and result summary. |
+| FR-033 | Coda sync history | P2 | View past sync results | Sync history list in settings. Each entry shows: date, entries imported, entries skipped, errors (if any), status badge (success/partial/failed). |
+| FR-034 | Coda sync mapping UI | P2 | Map Coda values to Velo projects and tasks | Mapping table: left column shows unique Coda task/project values, right column has dropdown to select Velo project + task. Unmapped values highlighted. Can bulk-map by project. |
 
 ---
 
@@ -776,6 +843,17 @@ All data access happens through Convex queries (reads) and mutations (writes). N
   - Loading: skeleton list
   - Empty: "Nothing planned for this day. Add tasks or notes to get started." with illustration.
   - All complete: "All done! 🎯" celebration text.
+
+### Screen: Coda Sync Settings
+- **Path:** `/settings` (new section within existing settings page)
+- **Layout:** Section below Business Settings with card-based layout
+- **Elements:**
+  - **Connection section:** API token input (password field with show/hide toggle), Coda document ID input, Coda table ID input, "Test Connection" button. On success: shows green checkmark + detected column names.
+  - **Column Mapping section** (visible after successful connection test): Dropdowns for each Velo field (Task → Coda column, Duration → Coda column, Log Date → Coda column, Notes → Coda column). Auto-populated with columns from the test response.
+  - **Project/Task Mapping section:** Two-column table. Left: unique values from Coda's Task column (fetched on demand). Right: cascading dropdowns — first select Velo project, then select task within that project. Unmapped rows highlighted with amber background. "Fetch values" button to reload Coda values.
+  - **Sync section:** "Sync Now" button (primary action). Last sync info: "Last synced: [date] — [N] entries imported." Sync history expandable list showing last 10 syncs with imported/skipped/error counts.
+- **States:** Unconfigured (empty form), configured (shows connection status + last sync), syncing (button shows spinner + "Syncing..."), sync complete (success/error toast + updated history)
+- **Empty state:** "Connect your Coda time tracking table to import entries into Velo."
 
 ### Screen: Business Settings
 - **Path:** `/settings`
@@ -935,6 +1013,22 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 | Carry over when target date already has items | Append carried-over items after existing items. Skip items that already exist on the target date. |
 | Very old dates | Allow viewing/editing any past date. No restrictions — useful for reviewing what was planned. |
 
+### Coda Sync Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| Invalid API token | `testConnection` returns error. Toast: "Invalid API token. Check your Coda settings." Config not saved. |
+| Coda document or table not found | `testConnection` returns error with specific message. Guide user to check doc/table IDs. |
+| Coda API rate limit hit during sync | Sync pauses, retries with exponential backoff (max 3 retries). If still failing, return partial result with error. |
+| Unmapped Coda task value | Entry skipped during sync. Counted in `entriesSkipped`. Error log: "Unmapped task: [value]". User sees which values need mapping. |
+| Duplicate time entry detection | Match by taskId + date (logDate) + duration. If all three match an existing timeEntry, skip. Prevents double-imports on re-sync. |
+| Coda row missing required fields | Skip row, log error: "Row [N]: missing [field]". Continue with remaining rows. |
+| Duration format variations | Parse common formats: "1.5" (hours), "1:30" (h:mm), "90" (minutes if < 24, hours otherwise). Document expected format in UI. |
+| Mapped task gets deleted in Velo | Sync skips entries for deleted tasks. Error log: "Task [title] no longer exists in Velo." User should update mapping. |
+| Mapped project gets archived | Sync skips entries for archived projects. Error log: "Project [name] is archived." |
+| Very large Coda table (1000+ rows) | Sync fetches in pages (Coda API pagination). Progress shown in UI. Consider syncing only entries after lastSyncAt. |
+| Concurrent sync attempts | Prevent double-sync with a flag. If sync already running, button disabled with "Sync in progress..." |
+
 ### General Error Handling
 
 | Error | UI Response |
@@ -971,10 +1065,11 @@ Not applicable — Velo is a personal tool with no monetization. No payment prov
 |---------|---------|---------------|
 | Convex Cloud | Backend + Database | API key (in `.env.local`) |
 | Vercel | Hosting | Account (free tier) |
+| Coda API | Time entry sync (optional) | User's personal API token (stored in codaSyncConfigs) |
 
-### No External Integrations in MVP
+### Integrations
 
-No GitHub, Slack, email, or third-party tool integrations. Velo is standalone.
+Coda time entry sync is the only external integration. It's optional and configured per-user in Settings. No other third-party integrations (GitHub, Slack, email, calendar, etc.).
 
 ---
 
@@ -987,7 +1082,7 @@ The following are explicitly NOT included in this PRD and should not be built in
 - Gantt charts or timeline views
 - Email notifications or in-app notifications
 - ~~Mobile app or PWA~~ **Responsive Web added in Phase 9** (no native app, but full mobile browser support)
-- Third-party integrations (GitHub, Slack, calendar, etc.)
+- ~~Third-party integrations (GitHub, Slack, calendar, etc.)~~ **Coda time sync added in Phase 11** (limited to one-way time entry import from Coda, no other integrations)
 - Custom workflows or configurable board columns
 - ~~Recurring tasks or templates~~ **MOVED TO SCOPE** (Phase 8)
 - File attachments on tasks

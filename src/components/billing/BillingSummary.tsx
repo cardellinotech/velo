@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { DateRangePicker } from "./DateRangePicker";
 import { BillingTable } from "./BillingTable";
 import { BillingExport } from "./BillingExport";
@@ -79,29 +79,56 @@ function SummaryCard({
 }
 
 export function BillingSummary() {
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
-  const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | undefined>(undefined);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
 
-  const stopTimer = useMutation(api.timeEntries.stop);
-
-  const projects = useQuery(api.projects.listActive);
-  const summaryData = useQuery(api.billing.summary, {
+  const billingParams = {
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     projectId: selectedProjectId,
+  };
+
+  const { data: projects } = useQuery({
+    queryKey: queryKeys.projects.active(),
+    queryFn: () => api.projects.listActive(),
   });
-  const entriesData = useQuery(api.billing.entries, {
-    startDate: dateRange.startDate,
-    endDate: dateRange.endDate,
-    projectId: selectedProjectId,
+
+  const { data: summaryData, isLoading: summaryLoading } = useQuery({
+    queryKey: queryKeys.billing.summary(billingParams),
+    queryFn: () => api.billing.summary(billingParams),
   });
 
-  const activeTimer = useQuery(api.timeEntries.getActive);
+  const { data: entriesData, isLoading: entriesLoading } = useQuery({
+    queryKey: queryKeys.billing.entries(billingParams),
+    queryFn: () => api.billing.entries(billingParams),
+  });
 
-  const isLoading = entriesData === undefined || summaryData === undefined;
+  const { data: activeTimer } = useQuery({
+    queryKey: queryKeys.timeEntries.active(),
+    queryFn: () => api.timeEntries.getActive(),
+  });
 
-  const amountsByCurrency = summaryData?.amountsByCurrency ?? {};
+  const stopTimerMutation = useMutation({
+    mutationFn: () => api.timeEntries.stop(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.active() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.billing.entries() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.billing.summary() });
+    },
+  });
+
+  const isLoading = entriesLoading || summaryLoading;
+
+  const summary = summaryData as {
+    totalDurationMs: number;
+    projectCount: number;
+    taskCount: number;
+    amountsByCurrency: Record<string, number>;
+  } | undefined;
+
+  const amountsByCurrency = summary?.amountsByCurrency ?? {};
   const hasAmount = Object.keys(amountsByCurrency).length > 0;
 
   function formatAmountSummary(): string {
@@ -121,12 +148,12 @@ export function BillingSummary() {
         />
         <select
           value={selectedProjectId ?? ""}
-          onChange={(e) => setSelectedProjectId(e.target.value ? (e.target.value as Id<"projects">) : undefined)}
+          onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
           className="h-9 rounded-lg border border-border/60 bg-white px-3 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
         >
           <option value="">All projects</option>
           {projects?.map((p) => (
-            <option key={p._id} value={p._id}>
+            <option key={p.id} value={p.id}>
               {p.name}{p.clientName ? ` — ${p.clientName}` : ""}
             </option>
           ))}
@@ -150,7 +177,7 @@ export function BillingSummary() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => stopTimer({ timeEntryId: activeTimer._id })}
+            onClick={() => stopTimerMutation.mutate()}
             className="relative text-text-secondary hover:text-error hover:bg-error/5 shrink-0"
           >
             <Square className="w-3.5 h-3.5" />
@@ -174,21 +201,21 @@ export function BillingSummary() {
         <div className={cn("grid gap-4", hasAmount ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
           <SummaryCard
             label={summaryConfigs[0].label}
-            value={formatDurationShort(summaryData.totalDurationMs)}
+            value={formatDurationShort(summary?.totalDurationMs ?? 0)}
             icon={summaryConfigs[0].icon}
             gradient={summaryConfigs[0].gradient}
             iconBg={summaryConfigs[0].iconBg}
           />
           <SummaryCard
             label={summaryConfigs[1].label}
-            value={summaryData.projectCount}
+            value={summary?.projectCount ?? 0}
             icon={summaryConfigs[1].icon}
             gradient={summaryConfigs[1].gradient}
             iconBg={summaryConfigs[1].iconBg}
           />
           <SummaryCard
             label={summaryConfigs[2].label}
-            value={summaryData.taskCount}
+            value={summary?.taskCount ?? 0}
             icon={summaryConfigs[2].icon}
             gradient={summaryConfigs[2].gradient}
             iconBg={summaryConfigs[2].iconBg}
@@ -212,7 +239,8 @@ export function BillingSummary() {
           <div className="flex flex-col sm:flex-row gap-2">
             {entriesData && (
               <BillingExport
-                entries={entriesData}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                entries={entriesData as any}
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
                 className="w-full sm:w-auto"
@@ -240,7 +268,8 @@ export function BillingSummary() {
             ))}
           </div>
         ) : (
-          <BillingTable entries={entriesData} />
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          <BillingTable entries={(entriesData ?? []) as any} />
         )}
       </div>
 

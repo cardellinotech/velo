@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Droppable } from "@hello-pangea/dnd";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Task } from "@/types";
 import { TaskCard } from "./TaskCard";
 import type { TaskStatus } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 interface KanbanColumnProps {
   status: TaskStatus;
   title: string;
-  tasks: Doc<"tasks">[];
+  tasks: Task[];
   epicsMap: Record<string, { name: string; color?: string }>;
-  onTaskClick?: (taskId: Id<"tasks">) => void;
+  onTaskClick?: (taskId: string) => void;
 }
 
 const columnConfig: Record<TaskStatus, {
@@ -102,7 +102,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               const epic = task.epicId ? epicsMap[task.epicId] : undefined;
               return (
                 <TaskCard
-                  key={task._id}
+                  key={task.id}
                   task={task}
                   index={index}
                   epicName={epic?.name}

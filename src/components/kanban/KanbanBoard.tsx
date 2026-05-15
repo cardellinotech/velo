@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id, Doc } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
+import type { Task } from "@/types";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 import { useToast } from "@/hooks/useToast";
@@ -14,7 +15,7 @@ import type { TaskStatus } from "@/lib/constants";
 const COLUMN_ORDER: TaskStatus[] = ["todo", "in_progress", "in_review", "done"];
 
 interface KanbanBoardProps {
-  projectId: Id<"projects">;
+  projectId: string;
   filters: {
     taskTypes: string[];
     epicId: string | null;
@@ -24,16 +25,49 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
   const toast = useToast();
-  const [selectedTaskId, setSelectedTaskId] = useState<Id<"tasks"> | null>(null);
+  const queryClient = useQueryClient();
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const tasks = useQuery(api.tasks.listByProject, { projectId });
-  const epics = useQuery(api.epics.listByProject, { projectId });
-  const moveToColumn = useMutation(api.tasks.moveToColumn);
-  const reorder = useMutation(api.tasks.reorder);
-  const startTimer = useMutation(api.timeEntries.start);
-  const stopForTask = useMutation(api.timeEntries.stopForTask);
 
-  if (tasks === undefined || epics === undefined) {
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: queryKeys.tasks.byProject(projectId),
+    queryFn: () => api.tasks.listByProject(projectId),
+  });
+
+  const { data: epics, isLoading: epicsLoading } = useQuery({
+    queryKey: queryKeys.epics.byProject(projectId),
+    queryFn: () => api.epics.listByProject(projectId),
+  });
+
+  const { mutateAsync: moveToColumn } = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: string; status: string }) =>
+      api.tasks.moveToColumn(taskId, { status }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) }),
+  });
+
+  const { mutateAsync: reorder } = useMutation({
+    mutationFn: ({ taskId, order }: { taskId: string; order: number }) =>
+      api.tasks.reorder(taskId, { order }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) }),
+  });
+
+  const { mutateAsync: startTimer } = useMutation({
+    mutationFn: ({ taskId }: { taskId: string }) =>
+      api.timeEntries.start({ taskId }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.active() }),
+  });
+
+  const { mutateAsync: stopForTask } = useMutation({
+    mutationFn: ({ taskId }: { taskId: string }) =>
+      api.timeEntries.stopForTask(taskId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.active() }),
+  });
+
+  if (tasksLoading || epicsLoading) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-4">
         {COLUMN_ORDER.map((status) => (
@@ -52,12 +86,12 @@ export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
 
   // Build epics map for lookup
   const epicsMap: Record<string, { name: string; color?: string }> = {};
-  for (const epic of epics) {
-    epicsMap[epic._id] = { name: epic.name, color: epic.color };
+  for (const epic of epics ?? []) {
+    epicsMap[epic.id] = { name: epic.name, color: epic.color };
   }
 
   // Apply filters
-  let filteredTasks = tasks as Doc<"tasks">[];
+  let filteredTasks = (tasks ?? []) as Task[];
   if (filters.taskTypes.length > 0) {
     filteredTasks = filteredTasks.filter((t) =>
       filters.taskTypes.includes(t.taskType)
@@ -73,7 +107,7 @@ export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
   }
 
   // Group by status, sorted by order
-  const columns: Record<TaskStatus, Doc<"tasks">[]> = {
+  const columns: Record<TaskStatus, Task[]> = {
     todo: [],
     in_progress: [],
     in_review: [],
@@ -99,17 +133,13 @@ export function KanbanBoard({ projectId, filters }: KanbanBoardProps) {
     // No-op if dropped in the same position
     if (sourceStatus === destStatus && sourceIndex === destIndex) return;
 
-    const taskId = result.draggableId as Id<"tasks">;
+    const taskId = result.draggableId;
 
     try {
       if (sourceStatus === destStatus) {
-        await reorder({ taskId, sourceIndex, destinationIndex: destIndex });
+        await reorder({ taskId, order: destIndex });
       } else {
-        await moveToColumn({
-          taskId,
-          newStatus: destStatus,
-          destinationIndex: destIndex,
-        });
+        await moveToColumn({ taskId, status: destStatus });
         toast.success(`Task moved to ${TASK_STATUSES[destStatus]}`);
         setAnnouncement(`Task moved to ${TASK_STATUSES[destStatus]}`);
 

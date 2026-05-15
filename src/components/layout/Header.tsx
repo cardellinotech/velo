@@ -1,14 +1,14 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useSession } from "next-auth/react";
 import { ActiveTimerBar } from "@/components/timer/ActiveTimerBar";
 import { useCreateTask } from "@/contexts/CreateTaskContext";
 import { cn } from "@/lib/utils";
 import { Plus, Menu } from "lucide-react";
 
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const user = useQuery(api.users.current);
+  const { data: session } = useSession();
+  const user = session?.user;
   const { projectId, openCreateTask } = useCreateTask();
 
   const initials = user?.name

@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
+import type * as codaSync from "../codaSync.js";
 import type * as crons from "../crons.js";
 import type * as dailyPlan from "../dailyPlan.js";
 import type * as dashboard from "../dashboard.js";
@@ -33,6 +34,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billing: typeof billing;
+  codaSync: typeof codaSync;
   crons: typeof crons;
   dailyPlan: typeof dailyPlan;
   dashboard: typeof dashboard;

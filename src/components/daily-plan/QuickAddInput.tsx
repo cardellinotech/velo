@@ -1,7 +1,8 @@
 "use client";
 
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { useToast } from "@/hooks/useToast";
 import { Plus } from "lucide-react";
 import { useState, useRef } from "react";
@@ -14,19 +15,25 @@ export function QuickAddInput({ dateStr }: QuickAddInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
-  const addFreeText = useMutation(api.dailyPlan.addFreeText);
+  const queryClient = useQueryClient();
+
+  const addFreeText = useMutation({
+    mutationFn: (title: string) =>
+      api.dailyPlan.create({ date: dateStr, title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
+      setValue("");
+      inputRef.current?.focus();
+    },
+    onError: () => {
+      toast.error("Failed to add note");
+    },
+  });
 
   const handleSubmit = async () => {
     const trimmed = value.trim();
     if (!trimmed) return;
-
-    try {
-      await addFreeText({ date: dateStr, title: trimmed });
-      setValue("");
-      inputRef.current?.focus();
-    } catch {
-      toast.error("Failed to add note");
-    }
+    addFreeText.mutate(trimmed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

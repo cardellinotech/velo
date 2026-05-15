@@ -1,22 +1,30 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { Doc } from "../../../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Archive, ArrowLeft, RotateCcw, DollarSign, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
+import type { Project } from "@/types";
 
-function ArchivedProjectCard({ project }: { project: Doc<"projects"> }) {
-  const unarchive = useMutation(api.projects.unarchive);
+function ArchivedProjectCard({ project }: { project: Project }) {
+  const queryClient = useQueryClient();
+  const unarchiveMutation = useMutation({
+    mutationFn: () => api.projects.unarchive(project.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.archived() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+    },
+  });
 
   return (
     <div className="group relative flex flex-col gap-3 rounded-xl border border-border/60 bg-white p-5 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden opacity-75 hover:opacity-100">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <Link
-            href={`/projects/${project._id}`}
+            href={`/projects/${project.id}`}
             className="text-sm font-semibold text-text-primary hover:text-primary transition-colors truncate block"
           >
             {project.name}
@@ -46,14 +54,14 @@ function ArchivedProjectCard({ project }: { project: Doc<"projects"> }) {
 
       <div className="flex items-center justify-between mt-auto pt-3 border-t border-border/40">
         <Link
-          href={`/projects/${project._id}`}
+          href={`/projects/${project.id}`}
           className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:text-primary-hover transition-colors"
         >
           Open board
           <ArrowRight className="w-3 h-3" />
         </Link>
         <button
-          onClick={() => unarchive({ projectId: project._id })}
+          onClick={() => unarchiveMutation.mutate()}
           className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 text-[11px] text-text-muted hover:text-text-primary px-2 py-1 rounded-lg hover:bg-surface transition-all duration-150"
         >
           <RotateCcw className="w-3 h-3" />
@@ -65,7 +73,10 @@ function ArchivedProjectCard({ project }: { project: Doc<"projects"> }) {
 }
 
 export default function ArchivedProjectsPage() {
-  const projects = useQuery(api.projects.listArchived);
+  const { data: projects, isLoading } = useQuery({
+    queryKey: queryKeys.projects.archived(),
+    queryFn: () => api.projects.listArchived(),
+  });
   const count = projects?.length ?? 0;
 
   return (
@@ -83,14 +94,14 @@ export default function ArchivedProjectsPage() {
           </div>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Archived Projects</h1>
           <p className="text-sm text-text-secondary mt-1">
-            {projects === undefined
+            {isLoading
               ? "Loading…"
               : `${count} archived project${count !== 1 ? "s" : ""}`}
           </p>
         </div>
       </div>
 
-      {projects === undefined ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-40 rounded-xl border border-border/60 bg-white animate-pulse">
@@ -103,7 +114,7 @@ export default function ArchivedProjectsPage() {
             </div>
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : !projects || projects.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-5 text-center">
           <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200">
             <Archive className="w-7 h-7 text-slate-400" />
@@ -118,7 +129,7 @@ export default function ArchivedProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {projects.map((project) => (
-            <ArchivedProjectCard key={project._id} project={project} />
+            <ArchivedProjectCard key={project.id} project={project} />
           ))}
         </div>
       )}

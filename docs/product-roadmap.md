@@ -526,45 +526,91 @@
 
 **Agent prompt:** "Add a Daily Planning feature ('My Day') to Velo. (1) Add `dailyPlanItems` table to Convex schema with fields: userId, date (YYYY-MM-DD string), taskId (optional link to existing task), title, projectName (optional, denormalized), isCompleted, order, createdAt. Index by userId+date. (2) Implement queries and mutations: get items by date, add task (with duplicate check), add free-text item, toggle complete, reorder (drag & drop), remove item, copy incomplete items to another date (carry-over). (3) Build the My Day page at /my-day — date navigation header with prev/next/today buttons, ordered list with drag & drop (@hello-pangea/dnd), checkbox per item, project badge on linked tasks, free-text quick-add input, 'Add Task' button that opens a task picker dialog. (4) Build TaskPickerDialog — search input filtering all active tasks (not done), shows task title + project name + type badge, click to add. Prevent duplicates for the same date. (5) Add 'My Day' link to sidebar navigation (Calendar icon from Lucide). (6) Handle edge cases: duplicate prevention, deleted linked tasks, task completed on Kanban auto-completes plan item, carry-over skips duplicates. Read convex/_generated/ai/guidelines.md and PRD §12 Daily Plan Edge Cases carefully."
 
-- [ ] **TASK-103** — Add dailyPlanItems table to Convex schema
+- [x] **TASK-103** — Add dailyPlanItems table to Convex schema
   Files: `convex/schema.ts`
   Notes: Add `dailyPlanItems` table with fields: userId (Id<"users">), date (string, "YYYY-MM-DD"), taskId (optional Id<"tasks">), title (string), projectName (optional string), isCompleted (boolean), order (number), createdAt (number). Index: `by_userId_date` on ["userId", "date"]. Read `convex/_generated/ai/guidelines.md` first.
 
-- [ ] **TASK-104** — Implement daily plan queries and mutations
+- [x] **TASK-104** — Implement daily plan queries and mutations
   Files: `convex/dailyPlan.ts`
   Notes: Query: `get` (userId + date, sorted by order). Mutations: `addTask` (looks up task title + project name, checks for duplicates on same date, appends with order = max+1), `addFreeText` (title only, no taskId), `toggleComplete` (flip isCompleted boolean), `reorder` (update order field), `remove` (delete item, does NOT delete linked task), `copyToDate` (copy incomplete items from fromDate to toDate, skip items where taskId already exists on toDate). All auth-gated.
 
-- [ ] **TASK-105** — Build My Day page with date navigation
+- [x] **TASK-105** — Build My Day page with date navigation
   Files: `src/app/(dashboard)/my-day/page.tsx`
   Notes: Date header: formatted like "Monday, April 6, 2026" with left/right arrows for prev/next day and a "Today" pill button. Default to today's date. URL stays at /my-day (date managed via state, not route param). Use `date-fns` for date formatting and navigation. Page has max-width-lg, centered.
 
-- [ ] **TASK-106** — Build daily plan items list with drag & drop
+- [x] **TASK-106** — Build daily plan items list with drag & drop
   Files: `src/components/daily-plan/DailyPlanList.tsx`
   Notes: Ordered list using @hello-pangea/dnd (same library as Kanban). Each item: drag handle (GripVertical icon), checkbox, title text, project badge (small pill with project name if linked to task), task type colored dot (if linked). Checked items: strikethrough, muted opacity, sorted to bottom. On drag end: call `reorder` mutation. Empty state: "Nothing planned for this day. Add tasks or notes to get started."
 
-- [ ] **TASK-107** — Build free-text quick-add input
+- [x] **TASK-107** — Build free-text quick-add input
   Files: `src/components/daily-plan/DailyPlanList.tsx` (or `QuickAddInput.tsx`)
   Notes: Input at the top or bottom of the list: placeholder "+ Add a note..." with Enter to submit. Calls `addFreeText` mutation. Clear input after adding. Focus stays in input for rapid entry.
 
-- [ ] **TASK-108** — Build TaskPickerDialog
+- [x] **TASK-108** — Build TaskPickerDialog
   Files: `src/components/daily-plan/TaskPickerDialog.tsx`
   Notes: Dialog opened by "Add Task" button. Contains a search input at top. Queries all user tasks where status != "done" from all active projects. Filter results by search term (case-insensitive match on title). Each result row: task title, project name badge, task type dot. Click a task → calls `addTask` mutation → shows toast "Added to plan" → dialog stays open for multi-add. Already-added tasks shown as disabled/grayed. Close button.
 
-- [ ] **TASK-109** — Add "My Day" to sidebar navigation
+- [x] **TASK-109** — Add "My Day" to sidebar navigation
   Files: `src/components/layout/Sidebar.tsx`
   Notes: Add "My Day" nav item with Calendar icon (from Lucide) between Dashboard and Projects. Active state styling same as other nav items. On mobile: same hamburger menu treatment as other links.
 
-- [ ] **TASK-110** — Implement carry-over functionality
+- [x] **TASK-110** — Implement carry-over functionality
   Files: `src/components/daily-plan/DailyPlanList.tsx`, `convex/dailyPlan.ts`
   Notes: When viewing a past date with incomplete items, show a "Carry over to today" button (or to tomorrow if viewing today). Calls `copyToDate` mutation. After carry-over, show toast: "X items carried over." Button disappears after use or when no incomplete items remain.
 
-- [ ] **TASK-111** — Handle edge cases and reactive updates
+- [x] **TASK-111** — Handle edge cases and reactive updates
   Files: `convex/dailyPlan.ts`, `src/components/daily-plan/DailyPlanList.tsx`
   Notes: If a linked task is deleted (via Kanban), the plan item should either auto-remove or show "(deleted task)" with strikethrough. If a linked task moves to "done" on the Kanban board, the plan item should reactively show as completed (query joins with tasks table to check status). When a plan item is checked and it has a taskId, show a toast offering to move the task to "done" status (with undo). Duplicate prevention: addTask mutation checks if taskId already exists for the date.
 
-- [ ] **TASK-112** — Final integration test and polish
+- [x] **TASK-112** — Final integration test and polish
   Files: All new files
   Notes: End-to-end test: navigate to My Day → add free-text items → add tasks via picker → reorder via drag → check items off → navigate to tomorrow → carry over incomplete items → verify items appear → go to Kanban, complete a linked task → verify My Day shows it as done. Visual polish: consistent with existing design system, proper spacing, responsive on mobile. Run `npx tsc --noEmit` to verify no TypeScript errors.
+
+---
+
+## Phase 11: Coda Time Sync
+
+**Goal:** Import time entries from a Coda table into Velo with a manual sync button. Users configure their Coda API connection, map Coda columns and task values to Velo projects/tasks, and trigger imports on demand. Duplicate entries are detected and skipped. At the end of this phase, a freelancer who tracked time in Coda can pull all those hours into Velo for billing and invoicing.
+
+**Reference sections:** PRD §3 (Data Model — codaSyncConfigs, codaSyncLog), PRD §4 (API — Coda Sync), PRD §6 (FR-031 through FR-034), PRD §8 (UI/UX — Coda Sync Settings), PRD §12 (Coda Sync Edge Cases), PRD §13 (Dependencies — Coda API)
+
+**Agent prompt:** "Add Coda time entry sync to Velo. (1) Add `codaSyncConfigs` and `codaSyncLog` tables to Convex schema. codaSyncConfigs stores: userId, codaApiToken, codaDocId, codaTableId, columnMapping (object mapping Coda column names to Velo fields), projectMappings (array of {codaValue, projectId}), taskMappings (array of {codaValue, taskId}), lastSyncAt, lastSyncCount. codaSyncLog stores: userId, configId, syncedAt, entriesImported, entriesSkipped, errors array, status. (2) Implement a Convex action `codaSync.runSync` (needs Node.js runtime for HTTP) that: fetches rows from Coda API using the stored config, maps each row's task column to a Velo taskId via taskMappings, converts duration to milliseconds, creates timeEntries, detects duplicates by matching taskId + date + duration, logs results to codaSyncLog. (3) Implement mutations: saveConfig, deleteConfig, testConnection (verifies API token + returns table columns). (4) Build Coda Sync settings UI section on the Settings page: connection form, column mapping dropdowns, project/task mapping table, sync button, sync history. (5) Handle edge cases: invalid API token, unmapped tasks, duplicate detection, rate limits, missing fields, archived projects. Read convex/_generated/ai/guidelines.md and PRD §12 Coda Sync Edge Cases carefully."
+
+- [x] **TASK-113** — Add codaSyncConfigs and codaSyncLog tables to Convex schema
+  Files: `convex/schema.ts`
+  Notes: Add `codaSyncConfigs` table with fields: userId (Id<"users">), codaApiToken (string), codaDocId (string), codaTableId (string), columnMapping (object with task/notes/duration/logDate/user string fields), projectMappings (array of {codaValue: string, projectId: Id<"projects">}), taskMappings (array of {codaValue: string, taskId: Id<"tasks">}), lastSyncAt (optional number), lastSyncCount (optional number), createdAt (number), updatedAt (number). Index: `by_userId`. Add `codaSyncLog` table with: userId, configId (Id<"codaSyncConfigs">), syncedAt (number), entriesImported (number), entriesSkipped (number), errors (optional array of {row: number, message: string}), status ("success" | "partial" | "failed"). Indexes: `by_userId`, `by_configId`, `by_configId_syncedAt`. Read `convex/_generated/ai/guidelines.md` first.
+
+- [x] **TASK-114** — Implement Coda sync config mutations and queries
+  Files: `convex/codaSync.ts`
+  Notes: Query `getConfig`: returns config for authenticated user (or null). Query `getSyncHistory`: returns codaSyncLog entries for user's config, ordered by syncedAt desc, with optional limit (default 10). Mutation `saveConfig`: upserts config for authenticated user. Mutation `deleteConfig`: deletes user's config + all related sync logs. All auth-gated. Use Convex validator for the columnMapping and mapping array shapes.
+
+- [x] **TASK-115** — Implement testConnection action
+  Files: `convex/codaSync.ts`
+  Notes: Convex action (not mutation — needs HTTP). Takes codaApiToken, codaDocId, codaTableId. Calls Coda API `GET /docs/{docId}/tables/{tableId}/columns` with Bearer token. On success: returns array of column names. On failure: returns error message (invalid token, doc not found, table not found). Coda API base: `https://coda.io/apis/v1`. Use fetch() in the action.
+
+- [x] **TASK-116** — Implement runSync action (core sync logic)
+  Files: `convex/codaSync.ts`
+  Notes: Convex action. Reads user's codaSyncConfig. Fetches rows from Coda API: `GET /docs/{docId}/tables/{tableId}/rows` (handle pagination via pageToken). For each row: extract values using columnMapping, parse duration (handle "1.5" hours, "1:30" h:mm, and minute formats), convert logDate to timestamp, look up taskId from taskMappings. Skip row if: no mapping found (log as skipped), missing required fields (log error), or duplicate exists (same taskId + date + duration in timeEntries table). Create timeEntry via internal mutation for valid rows. After processing: write codaSyncLog entry, update config's lastSyncAt + lastSyncCount. Return summary {imported, skipped, errors}.
+
+- [x] **TASK-117** — Build Coda Sync settings UI section
+  Files: `src/components/settings/CodaSyncSettings.tsx`, update `src/app/(dashboard)/settings/page.tsx`
+  Notes: New component rendered as a section in Settings page. Three-part form: (1) Connection: API token (password input with show/hide), doc ID, table ID inputs. "Test Connection" button — on success shows green checkmark and saves column names in local state. (2) Column Mapping: dropdowns for each Velo field (Task, Duration, Log Date, Notes) populated with column names from test. (3) Save button for the full config. Show "Connected" badge and last sync info if config already exists. "Delete Config" button with confirmation. Style consistent with existing settings sections.
+
+- [x] **TASK-118** — Build project/task mapping UI
+  Files: `src/components/settings/CodaSyncMappings.tsx`
+  Notes: Component shown after config is saved. "Fetch Coda Values" button that calls a helper action to get unique values from the Coda Task column. Two-column table: left shows Coda values, right has cascading dropdowns (select Velo project → then task within project). Unmapped rows highlighted with amber/yellow background. Save mappings button updates the config's projectMappings and taskMappings arrays. For convenience: "Map all to project" bulk action — select a project and all unmapped Coda values get assigned to tasks in that project (best-effort name matching, or manual selection).
+
+- [x] **TASK-119** — Build sync execution UI and history
+  Files: `src/components/settings/CodaSyncSettings.tsx`
+  Notes: "Sync Now" primary button. While syncing: button disabled with spinner, text "Syncing...". On complete: toast with summary ("12 entries imported, 3 skipped"). Below button: expandable sync history list (from getSyncHistory query). Each entry shows: date/time, entries imported (green), entries skipped (amber), errors (red if any), status badge. Click to expand error details. If no config: show empty state "Connect your Coda time tracking table to import entries into Velo."
+
+- [x] **TASK-120** — Handle edge cases and duplicate detection
+  Files: `convex/codaSync.ts`, `src/components/settings/CodaSyncSettings.tsx`
+  Notes: Duplicate detection in runSync: before creating a timeEntry, query existing entries by taskId where startTime matches the logDate and durationMs matches. If found, skip. Handle archived projects: skip entries for archived projects, log warning. Handle deleted tasks: skip entries where mapped taskId no longer exists, log error. Handle Coda API rate limits: if 429 response, wait and retry (max 3 retries with exponential backoff). Handle missing fields: skip row, log "Row N: missing [field]". Prevent concurrent syncs: add `isSyncing` boolean to config, check before starting, reset on completion (even on error).
+
+- [x] **TASK-121** — Final integration test and polish
+  Files: All new files
+  Notes: End-to-end test: go to Settings → configure Coda connection → test → map columns → save → fetch Coda values → map to Velo projects/tasks → save mappings → click "Sync Now" → verify time entries created → check Billing view shows imported hours → re-sync → verify no duplicates → check sync history. Visual polish: consistent with existing settings page design. Run `npx tsc --noEmit` to verify no TypeScript errors.
 
 ---
 
@@ -594,8 +640,9 @@ Each phase is designed to be completed in 1–3 coding sessions. Here's how to a
 - **Phase 8:** 2–3 sessions (recurring task templates + cron job + management UI)
 - **Phase 9:** 2–3 sessions (full responsive/mobile optimization across all pages)
 - **Phase 10:** 2–3 sessions (daily plan schema + UI + drag & drop + task picker + carry-over)
+- **Phase 11:** 2–3 sessions (Coda API integration + sync config UI + mapping UI + sync execution + duplicate detection)
 
-**Total estimated sessions: 21–33**
+**Total estimated sessions: 23–36**
 
 ### When You Hit a Problem
 

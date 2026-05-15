@@ -1,26 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { getPresetRange } from "@/lib/dateRanges";
 import { FileText } from "lucide-react";
-
-interface ProjectOption {
-  _id: Id<"projects">;
-  name: string;
-  clientName?: string;
-  hourlyRate?: number;
-}
+import type { Project } from "@/types";
 
 interface CreateInvoiceDialogProps {
   open: boolean;
   onClose: () => void;
-  projects: ProjectOption[];
+  projects: Project[];
 }
 
 function tsToDateStr(ts: number): string {
@@ -40,22 +34,32 @@ export function CreateInvoiceDialog({
   projects,
 }: CreateInvoiceDialogProps) {
   const router = useRouter();
-  const createInvoice = useMutation(api.invoices.create);
+  const queryClient = useQueryClient();
 
-  const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | "">("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [periodStart, setPeriodStart] = useState(defaultRange.startDate);
   const [periodEnd, setPeriodEnd] = useState(defaultRange.endDate);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedProject = projects.find((p) => p._id === selectedProjectId);
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  const entries = useQuery(
-    api.billing.entries,
-    selectedProjectId
-      ? { startDate: periodStart, endDate: periodEnd, projectId: selectedProjectId as Id<"projects"> }
-      : "skip"
-  );
+  const billingParams = selectedProjectId
+    ? { startDate: periodStart, endDate: periodEnd, projectId: selectedProjectId }
+    : undefined;
+
+  const { data: entries } = useQuery({
+    queryKey: queryKeys.billing.entries(billingParams),
+    queryFn: () => api.billing.entries(billingParams),
+    enabled: !!selectedProjectId,
+  });
+
+  const createInvoiceMutation = useMutation({
+    mutationFn: (data: unknown) => api.invoices.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+    },
+  });
 
   async function handleCreate() {
     if (!selectedProjectId) return;
@@ -68,7 +72,9 @@ export function CreateInvoiceDialog({
       if (hourlyRate > 0 && entries && entries.length > 0) {
         const taskMap = new Map<string, { hours: number; taskTitle: string; earliestDate: number }>();
         for (const entry of entries) {
-          const hours = entry.durationMs / 3_600_000;
+          // The billing entries API returns durationMs (aliased from duration)
+          const rawEntry = entry as unknown as { durationMs?: number; duration?: number };
+          const hours = (rawEntry.durationMs ?? rawEntry.duration ?? 0) / 3_600_000;
           const existing = taskMap.get(entry.taskId);
           if (existing) {
             existing.hours += hours;
@@ -91,14 +97,14 @@ export function CreateInvoiceDialog({
           });
       }
 
-      const invoiceId = await createInvoice({
-        projectId: selectedProjectId as Id<"projects">,
+      const invoice = await createInvoiceMutation.mutateAsync({
+        projectId: selectedProjectId,
         periodStart,
         periodEnd,
         lineItems: lineItems && lineItems.length > 0 ? lineItems : undefined,
       });
       onClose();
-      router.push(`/invoices/${invoiceId}`);
+      router.push(`/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create invoice");
       setIsSubmitting(false);
@@ -120,12 +126,12 @@ export function CreateInvoiceDialog({
           </label>
           <select
             value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value as Id<"projects"> | "")}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
             className="h-10 w-full rounded-lg border border-border/60 bg-white px-3.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all duration-150"
           >
             <option value="">Select a project…</option>
             {projects.map((p) => (
-              <option key={p._id} value={p._id}>
+              <option key={p.id} value={p.id}>
                 {p.name}{p.clientName ? ` — ${p.clientName}` : ""}
               </option>
             ))}

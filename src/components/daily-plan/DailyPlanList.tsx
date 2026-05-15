@@ -2,9 +2,9 @@
 
 import { cn } from "@/lib/utils";
 import { TASK_TYPES, type TaskType } from "@/lib/constants";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { useToast } from "@/hooks/useToast";
 import {
   DragDropContext,
@@ -24,11 +24,11 @@ import { format, isToday, isBefore, startOfDay, addDays } from "date-fns";
 import { useCallback, useMemo } from "react";
 
 type PlanItem = {
-  _id: Id<"dailyPlanItems">;
+  id: string;
   title: string;
   isCompleted: boolean;
   order: number;
-  taskId?: Id<"tasks"> | null;
+  taskId?: string | null;
   projectName?: string | null;
   taskDeleted?: boolean;
   taskStatus?: string | null;
@@ -45,10 +45,48 @@ const NOTES_GROUP = "__notes__";
 
 export function DailyPlanList({ items, date, dateStr }: DailyPlanListProps) {
   const toast = useToast();
-  const toggleComplete = useMutation(api.dailyPlan.toggleComplete);
-  const reorder = useMutation(api.dailyPlan.reorder);
-  const remove = useMutation(api.dailyPlan.remove);
-  const copyToDate = useMutation(api.dailyPlan.copyToDate);
+  const queryClient = useQueryClient();
+
+  const toggleComplete = useMutation({
+    mutationFn: (id: string) => api.dailyPlan.toggle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
+    },
+    onError: () => {
+      toast.error("Failed to update item");
+    },
+  });
+
+  const reorder = useMutation({
+    mutationFn: (data: unknown) => api.dailyPlan.reorder(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
+    },
+    onError: () => {
+      toast.error("Failed to reorder");
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => api.dailyPlan.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
+    },
+    onError: () => {
+      toast.error("Failed to remove item");
+    },
+  });
+
+  const copyToDate = useMutation({
+    mutationFn: (data: unknown) => api.dailyPlan.copyToDate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
+      toast.success("Items carried over.");
+    },
+    onError: () => {
+      toast.error("Failed to carry over items");
+    },
+  });
 
   const incompleteItems = items.filter((i) => !i.isCompleted && !i.taskDeleted);
   const allComplete = items.length > 0 && incompleteItems.length === 0;
@@ -111,54 +149,33 @@ export function DailyPlanList({ items, date, dateStr }: DailyPlanListProps) {
 
         // Find global indices for the reordered items
         const allSorted = [...items].sort((a, b) => a.order - b.order);
-        const globalIndex = allSorted.findIndex((i) => i._id === item._id);
         const targetItem = reordered[destination.index === 0 ? 1 : destination.index - 1];
         const targetGlobalIndex = targetItem
-          ? allSorted.findIndex((i) => i._id === targetItem._id)
+          ? allSorted.findIndex((i) => i.id === targetItem.id)
           : 0;
 
-        reorder({
-          itemId: item._id,
+        reorder.mutate({
+          itemId: item.id,
           newOrder: destination.index > source.index ? targetGlobalIndex : targetGlobalIndex + 1,
-        }).catch(() => toast.error("Failed to reorder"));
+        });
       }
     },
-    [groups, items, reorder, toast]
+    [groups, items, reorder]
   );
 
-  const handleToggle = async (itemId: Id<"dailyPlanItems">) => {
-    try {
-      const result = await toggleComplete({ itemId });
-      if (result.taskId && result.isCompleted) {
-        toast.info("Plan item checked. Move task to Done on the board to sync.");
-      }
-    } catch {
-      toast.error("Failed to update item");
-    }
+  const handleToggle = async (id: string) => {
+    toggleComplete.mutate(id);
   };
 
-  const handleRemove = async (itemId: Id<"dailyPlanItems">) => {
-    try {
-      await remove({ itemId });
-    } catch {
-      toast.error("Failed to remove item");
-    }
+  const handleRemove = async (id: string) => {
+    remove.mutate(id);
   };
 
   const handleCarryOver = async () => {
     const targetDate = isToday(date)
       ? format(addDays(new Date(), 1), "yyyy-MM-dd")
       : format(new Date(), "yyyy-MM-dd");
-    try {
-      const count = await copyToDate({ fromDate: dateStr, toDate: targetDate });
-      if (count === 0) {
-        toast.info("All items already exist on the target date.");
-      } else {
-        toast.success(`${count} item${count > 1 ? "s" : ""} carried over.`);
-      }
-    } catch {
-      toast.error("Failed to carry over items");
-    }
+    copyToDate.mutate({ fromDate: dateStr, toDate: targetDate });
   };
 
   if (items.length === 0) {
@@ -221,8 +238,8 @@ export function DailyPlanList({ items, date, dateStr }: DailyPlanListProps) {
                   >
                     {groupItems.map((item, index) => (
                       <Draggable
-                        key={item._id}
-                        draggableId={item._id}
+                        key={item.id}
+                        draggableId={item.id}
                         index={index}
                         isDragDisabled={item.isCompleted || !!item.taskDeleted}
                       >
@@ -253,7 +270,7 @@ export function DailyPlanList({ items, date, dateStr }: DailyPlanListProps) {
 
                             {/* Checkbox */}
                             <button
-                              onClick={() => handleToggle(item._id)}
+                              onClick={() => handleToggle(item.id)}
                               disabled={!!item.taskDeleted}
                               className={cn(
                                 "flex items-center justify-center w-5 h-5 shrink-0 rounded-md border-2 transition-all",
@@ -309,7 +326,7 @@ export function DailyPlanList({ items, date, dateStr }: DailyPlanListProps) {
 
                             {/* Remove button */}
                             <button
-                              onClick={() => handleRemove(item._id)}
+                              onClick={() => handleRemove(item.id)}
                               className="opacity-0 group-hover:opacity-100 flex items-center justify-center w-6 h-6 shrink-0 text-text-muted/40 hover:text-red-500 transition-all"
                               aria-label="Remove item"
                             >

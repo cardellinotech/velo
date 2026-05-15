@@ -1,17 +1,22 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 
 export default function TaskDetailPage() {
   const params = useParams();
-  const taskId = params.taskId as Id<"tasks">;
-  const task = useQuery(api.tasks.get, { taskId });
+  const taskId = params.taskId as string;
 
-  if (task === undefined) {
+  const { data: task, isLoading: taskLoading } = useQuery({
+    queryKey: queryKeys.tasks.detail(taskId),
+    queryFn: () => api.tasks.get(taskId),
+    enabled: !!taskId,
+  });
+
+  if (taskLoading) {
     return (
       <div className="max-w-2xl animate-pulse flex flex-col gap-4">
         <div className="h-4 w-24 bg-border rounded" />
@@ -26,7 +31,7 @@ export default function TaskDetailPage() {
     );
   }
 
-  if (task === null) {
+  if (!task) {
     return (
       <div className="text-sm text-text-secondary">Task not found.</div>
     );
@@ -35,10 +40,14 @@ export default function TaskDetailPage() {
   return <TaskDetailLoader task={task} />;
 }
 
-function TaskDetailLoader({ task }: { task: NonNullable<ReturnType<typeof useQuery<typeof api.tasks.get>>> }) {
-  const project = useQuery(api.projects.get, { projectId: task.projectId });
+function TaskDetailLoader({ task }: { task: NonNullable<Awaited<ReturnType<typeof api.tasks.get>>> }) {
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: queryKeys.projects.detail(task.projectId),
+    queryFn: () => api.projects.get(task.projectId),
+    enabled: !!task.projectId,
+  });
 
-  if (project === undefined) {
+  if (projectLoading) {
     return (
       <div className="max-w-2xl animate-pulse flex flex-col gap-4">
         <div className="h-4 w-24 bg-border rounded" />
@@ -47,7 +56,7 @@ function TaskDetailLoader({ task }: { task: NonNullable<ReturnType<typeof useQue
     );
   }
 
-  if (project === null) {
+  if (!project) {
     return <div className="text-sm text-text-secondary">Project not found.</div>;
   }
 

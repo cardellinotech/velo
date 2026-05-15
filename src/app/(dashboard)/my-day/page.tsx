@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { DailyPlanList } from "@/components/daily-plan/DailyPlanList";
 import { QuickAddInput } from "@/components/daily-plan/QuickAddInput";
 import { TaskPickerDialog } from "@/components/daily-plan/TaskPickerDialog";
@@ -14,7 +15,11 @@ export default function MyDayPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const dateStr = format(date, "yyyy-MM-dd");
-  const items = useQuery(api.dailyPlan.get, { date: dateStr });
+
+  const { data: items, isLoading } = useQuery({
+    queryKey: queryKeys.dailyPlan.byDate(dateStr),
+    queryFn: () => api.dailyPlan.get(dateStr),
+  });
 
   const goToPrev = () => setDate((d) => subDays(d, 1));
   const goToNext = () => setDate((d) => addDays(d, 1));
@@ -71,14 +76,14 @@ export default function MyDayPage() {
         </div>
 
         {/* Items list */}
-        {items === undefined ? (
+        {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-12 rounded-xl bg-surface animate-pulse" />
             ))}
           </div>
         ) : (
-          <DailyPlanList items={items} date={date} dateStr={dateStr} />
+          <DailyPlanList items={items ?? []} date={date} dateStr={dateStr} />
         )}
 
         {/* Task picker dialog */}

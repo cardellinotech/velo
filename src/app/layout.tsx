@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
-import { ConvexClientProvider } from "@/components/layout/ConvexClientProvider";
+import { SessionProvider } from "next-auth/react";
+import { QueryProvider } from "@/components/layout/QueryProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,12 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ConvexAuthNextjsServerProvider>
-      <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
-        <body className="h-full antialiased">
-          <ConvexClientProvider>{children}</ConvexClientProvider>
-        </body>
-      </html>
-    </ConvexAuthNextjsServerProvider>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} h-full`}>
+      <body className="h-full antialiased">
+        <SessionProvider>
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+        </SessionProvider>
+      </body>
+    </html>
   );
 }

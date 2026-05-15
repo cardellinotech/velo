@@ -2,32 +2,42 @@
 
 import Link from "next/link";
 import { Square } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import { useActiveTimer } from "@/hooks/useActiveTimer";
 import { TimerDisplay } from "./TimerDisplay";
 import { useToast } from "@/hooks/useToast";
 
 export function ActiveTimerBar() {
   const toast = useToast();
-  const activeEntry = useActiveTimer();
-  const stopMutation = useMutation(api.timeEntries.stop);
+  const queryClient = useQueryClient();
+  const { data } = useActiveTimer();
 
-  const task = useQuery(
-    api.tasks.get,
-    activeEntry ? { taskId: activeEntry.taskId } : "skip"
-  );
-  const project = useQuery(
-    api.projects.get,
-    task ? { projectId: task.projectId } : "skip"
-  );
+  const { data: task } = useQuery({
+    queryKey: queryKeys.tasks.detail(data?.taskId ?? ""),
+    queryFn: () => api.tasks.get(data!.taskId),
+    enabled: !!data?.taskId,
+  });
 
-  if (!activeEntry) return null;
+  const { data: project } = useQuery({
+    queryKey: queryKeys.projects.detail(task?.projectId ?? ""),
+    queryFn: () => api.projects.get(task!.projectId),
+    enabled: !!task?.projectId,
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: () => api.timeEntries.stop(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.active() });
+    },
+  });
+
+  if (!data) return null;
 
   async function handleStop() {
-    if (!activeEntry) return;
     try {
-      await stopMutation({ timeEntryId: activeEntry._id });
+      await stopMutation.mutateAsync();
       toast.success("Timer stopped");
     } catch {
       toast.error("Failed to stop timer");
@@ -42,7 +52,7 @@ export function ActiveTimerBar() {
       </span>
       {task ? (
         <Link
-          href={`/tasks/${activeEntry.taskId}`}
+          href={`/tasks/${data.taskId}`}
           className="hidden sm:inline font-semibold text-text-primary hover:text-primary transition-colors truncate max-w-[140px] text-[13px]"
         >
           {task.title}
@@ -54,7 +64,7 @@ export function ActiveTimerBar() {
         </span>
       )}
       <TimerDisplay
-        startTime={activeEntry.startTime}
+        startTime={data.startTime}
         className="text-emerald-700 text-xs font-mono font-semibold tabular-nums bg-emerald-100/60 px-2 py-0.5 rounded-md"
       />
       <button

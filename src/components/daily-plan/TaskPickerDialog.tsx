@@ -3,12 +3,21 @@
 import { cn } from "@/lib/utils";
 import { TASK_TYPES, type TaskType } from "@/lib/constants";
 import { Dialog } from "@/components/ui/Dialog";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
 import { Search } from "lucide-react";
 import { useState } from "react";
+
+interface SearchTask {
+  id: string;
+  title: string;
+  taskType: string;
+  projectId: string;
+  projectName: string;
+  alreadyAdded: boolean;
+}
 
 interface TaskPickerDialogProps {
   open: boolean;
@@ -16,27 +25,46 @@ interface TaskPickerDialogProps {
   dateStr: string;
 }
 
+async function searchActiveTasks(search: string, date: string): Promise<SearchTask[]> {
+  const params = new URLSearchParams({ date });
+  if (search.trim()) params.set("search", search.trim());
+  const res = await fetch(`/api/daily-plan/search-tasks?${params.toString()}`);
+  if (!res.ok) throw new Error("Failed to search tasks");
+  return res.json() as Promise<SearchTask[]>;
+}
+
 export function TaskPickerDialog({ open, onClose, dateStr }: TaskPickerDialogProps) {
   const [search, setSearch] = useState("");
   const toast = useToast();
-  const addTask = useMutation(api.dailyPlan.addTask);
+  const queryClient = useQueryClient();
 
-  const tasks = useQuery(
-    api.dailyPlan.searchActiveTasks,
-    open ? { search: search || undefined, date: dateStr } : "skip"
-  );
+  const { data: tasks, isLoading } = useQuery({
+    queryKey: [...queryKeys.dailyPlan.byDate(dateStr), "search", search],
+    queryFn: () => searchActiveTasks(search, dateStr),
+    enabled: open,
+  });
 
-  const handleAdd = async (taskId: Id<"tasks">) => {
-    try {
-      await addTask({ date: dateStr, taskId });
+  const addTask = useMutation({
+    mutationFn: async (task: SearchTask) => {
+      return api.dailyPlan.create({ date: dateStr, taskId: task.id, title: task.title });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyPlan.byDate(dateStr) });
       toast.success("Added to plan");
-    } catch (err: unknown) {
+    },
+    onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : "Failed to add task";
       if (message.includes("already")) {
         toast.info("Task already in today's plan.");
       } else {
         toast.error(message);
       }
+    },
+  });
+
+  const handleAdd = (task: SearchTask) => {
+    if (!task.alreadyAdded) {
+      addTask.mutate(task);
     }
   };
 
@@ -57,13 +85,13 @@ export function TaskPickerDialog({ open, onClose, dateStr }: TaskPickerDialogPro
 
       {/* Task list */}
       <div className="max-h-[400px] overflow-y-auto -mx-5 px-5">
-        {!tasks ? (
+        {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-12 rounded-lg bg-surface animate-pulse" />
             ))}
           </div>
-        ) : tasks.length === 0 ? (
+        ) : !tasks || tasks.length === 0 ? (
           <p className="text-center text-text-muted text-sm py-8">
             {search ? "No tasks match your search." : "No active tasks found."}
           </p>
@@ -71,8 +99,8 @@ export function TaskPickerDialog({ open, onClose, dateStr }: TaskPickerDialogPro
           <div className="space-y-1">
             {tasks.map((task) => (
               <button
-                key={task._id}
-                onClick={() => !task.alreadyAdded && handleAdd(task._id)}
+                key={task.id}
+                onClick={() => handleAdd(task)}
                 disabled={task.alreadyAdded}
                 className={cn(
                   "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-all",

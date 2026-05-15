@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
-import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -15,18 +15,58 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { RecurringTaskList } from "@/components/recurring/RecurringTaskList";
 import { RecurringTaskForm } from "@/components/recurring/RecurringTaskForm";
+import { CodaSyncSettings } from "@/components/settings/CodaSyncSettings";
 
 export default function ProjectSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const toast = useToast();
-  const projectId = params.projectId as Id<"projects">;
+  const queryClient = useQueryClient();
+  const projectId = params.projectId as string;
 
-  const project = useQuery(api.projects.get, { projectId });
-  const userSettings = useQuery(api.userSettings.get);
-  const updateProject = useMutation(api.projects.update);
-  const archiveProject = useMutation(api.projects.archive);
-  const unarchiveProject = useMutation(api.projects.unarchive);
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: queryKeys.projects.detail(projectId),
+    queryFn: () => api.projects.get(projectId),
+    enabled: !!projectId,
+  });
+
+  const { data: userSettings } = useQuery({
+    queryKey: queryKeys.userSettings.all(),
+    queryFn: () => api.userSettings.get(),
+  });
+
+  const { data: recurringTemplates } = useQuery({
+    queryKey: queryKeys.recurringTasks.all(),
+    queryFn: () => api.recurringTasks.list(),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Parameters<typeof api.projects.update>[1]) =>
+      api.projects.update(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: () => api.projects.archive(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.archived() });
+    },
+  });
+
+  const unarchiveMutation = useMutation({
+    mutationFn: () => api.projects.unarchive(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.archived() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId) });
+    },
+  });
 
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
@@ -38,8 +78,6 @@ export default function ProjectSettingsPage() {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [recurringFormOpen, setRecurringFormOpen] = useState(false);
-
-  const recurringTemplates = useQuery(api.recurringTasks.list, { projectId });
 
   // Initialize form when project loads
   const [initialized, setInitialized] = useState(false);
@@ -65,8 +103,7 @@ export default function ProjectSettingsPage() {
     setSaving(true);
     const parsedRate = hourlyRate.trim() ? parseFloat(hourlyRate.trim()) : undefined;
     try {
-      await updateProject({
-        projectId,
+      await updateMutation.mutateAsync({
         name: name.trim(),
         clientName: clientName.trim() || undefined,
         description: description.trim() || undefined,
@@ -84,7 +121,7 @@ export default function ProjectSettingsPage() {
   async function handleArchive() {
     setArchiving(true);
     try {
-      await archiveProject({ projectId });
+      await archiveMutation.mutateAsync();
       toast.success("Project archived.");
       router.push("/projects");
     } catch {
@@ -95,14 +132,14 @@ export default function ProjectSettingsPage() {
 
   async function handleUnarchive() {
     try {
-      await unarchiveProject({ projectId });
+      await unarchiveMutation.mutateAsync();
       toast.success("Project restored.");
     } catch {
       toast.error("Something went wrong. Please try again.");
     }
   }
 
-  if (project === undefined) {
+  if (projectLoading) {
     return (
       <div className="flex flex-col gap-5 max-w-lg animate-pulse">
         <div className="flex items-center gap-3">
@@ -121,7 +158,7 @@ export default function ProjectSettingsPage() {
     );
   }
 
-  if (project === null) {
+  if (!project) {
     return (
       <div className="text-sm text-text-secondary">Project not found.</div>
     );
@@ -251,6 +288,10 @@ export default function ProjectSettingsPage() {
           projectId={projectId}
         />
       </div>
+
+      <hr className="border-border/40" />
+
+      <CodaSyncSettings projectId={projectId} />
 
       <hr className="border-border/40" />
 

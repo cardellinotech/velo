@@ -1,9 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { signOut } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -32,8 +33,10 @@ const workNavItems = [
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
-  const { signOut } = useAuthActions();
-  const projects = useQuery(api.projects.listActive);
+  const { data: projects } = useQuery({
+    queryKey: queryKeys.projects.active(),
+    queryFn: () => api.projects.listActive(),
+  });
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -160,10 +163,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </p>
               <ul className="flex flex-col gap-0.5">
                 {projects.map((project) => {
-                  const href = `/projects/${project._id}`;
+                  const href = `/projects/${project.id}`;
                   const active = pathname.startsWith(href);
                   return (
-                    <li key={project._id}>
+                    <li key={project.id}>
                       <Link
                         href={href}
                         onClick={onClose}
@@ -198,7 +201,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       {/* Logout */}
       <div className="border-t border-white/[0.06] p-3">
         <button
-          onClick={() => void signOut()}
+          onClick={() => void signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-500 transition-all duration-150 hover:text-slate-300 hover:bg-white/[0.04]"
         >
           <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />

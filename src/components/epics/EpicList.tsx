@@ -1,36 +1,52 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import type { Epic } from "@/types";
 import { EpicForm } from "./EpicForm";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
 import { Edit2, Lock, Unlock } from "lucide-react";
 
 interface EpicListProps {
-  epics: Doc<"epics">[];
-  projectId: Id<"projects">;
+  epics: Epic[];
+  projectId: string;
 }
 
-function EpicRow({ epic, projectId }: { epic: Doc<"epics">; projectId: Id<"projects"> }) {
+function EpicRow({ epic, projectId }: { epic: Epic; projectId: string }) {
   const toast = useToast();
-  const closeEpic = useMutation(api.epics.close);
-  const reopenEpic = useMutation(api.epics.reopen);
+  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
 
-  async function handleToggleStatus() {
-    try {
-      if (epic.status === "open") {
-        await closeEpic({ epicId: epic._id });
-        toast.success("Epic closed.");
-      } else {
-        await reopenEpic({ epicId: epic._id });
-        toast.success("Epic reopened.");
-      }
-    } catch {
+  const closeEpic = useMutation({
+    mutationFn: (id: string) => api.epics.close(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.epics.byProject(projectId) });
+      toast.success("Epic closed.");
+    },
+    onError: () => {
       toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  const reopenEpic = useMutation({
+    mutationFn: (id: string) => api.epics.reopen(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.epics.byProject(projectId) });
+      toast.success("Epic reopened.");
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  async function handleToggleStatus() {
+    if (epic.status === "open") {
+      closeEpic.mutate(epic.id);
+    } else {
+      reopenEpic.mutate(epic.id);
     }
   }
 
@@ -126,7 +142,7 @@ export function EpicList({ epics, projectId }: EpicListProps) {
               <div className="flex flex-col gap-1.5">
                 <p className="text-xs font-medium text-text-secondary uppercase tracking-wide">Open</p>
                 {open.map((epic) => (
-                  <EpicRow key={epic._id} epic={epic} projectId={projectId} />
+                  <EpicRow key={epic.id} epic={epic} projectId={projectId} />
                 ))}
               </div>
             )}
@@ -134,7 +150,7 @@ export function EpicList({ epics, projectId }: EpicListProps) {
               <div className="flex flex-col gap-1.5 mt-2">
                 <p className="text-xs font-medium text-text-secondary uppercase tracking-wide">Closed</p>
                 {closed.map((epic) => (
-                  <EpicRow key={epic._id} epic={epic} projectId={projectId} />
+                  <EpicRow key={epic.id} epic={epic} projectId={projectId} />
                 ))}
               </div>
             )}

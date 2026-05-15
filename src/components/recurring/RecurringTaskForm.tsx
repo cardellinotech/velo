@@ -1,23 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
+import type { RecurringTaskTemplate } from "@/types";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
 import { TASK_TYPES, PRIORITIES } from "@/lib/constants";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
-import { computeNextDueDate } from "../../../convex/lib/recurrence";
+import { computeNextDueDate } from "@/lib/recurrence";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface RecurringTaskFormProps {
   open: boolean;
   onClose: () => void;
-  projectId: Id<"projects">;
-  template?: Doc<"recurringTaskTemplates">;
+  projectId: string;
+  template?: RecurringTaskTemplate;
 }
 
 const DAYS_OF_WEEK = [
@@ -37,9 +38,13 @@ export function RecurringTaskForm({
   template,
 }: RecurringTaskFormProps) {
   const toast = useToast();
-  const createTemplate = useMutation(api.recurringTasks.create);
-  const updateTemplate = useMutation(api.recurringTasks.update);
-  const epics = useQuery(api.epics.listByProject, { projectId });
+  const queryClient = useQueryClient();
+
+  const { data: epics } = useQuery({
+    queryKey: queryKeys.epics.byProject(projectId),
+    queryFn: () => api.epics.listByProject(projectId),
+    enabled: !!projectId,
+  });
 
   const isEdit = !!template;
 
@@ -52,7 +57,6 @@ export function RecurringTaskForm({
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [titleError, setTitleError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -87,46 +91,54 @@ export function RecurringTaskForm({
     recurrence === "monthly" ? dayOfMonth : undefined
   );
 
+  const createTemplate = useMutation({
+    mutationFn: (data: unknown) => api.recurringTasks.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringTasks.all() });
+      toast.success("Recurring task created.");
+      onClose();
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  const updateTemplate = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: unknown }) =>
+      api.recurringTasks.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recurringTasks.all() });
+      toast.success("Recurring task updated.");
+      onClose();
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  const loading = createTemplate.isPending || updateTemplate.isPending;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
       setTitleError("Title is required.");
       return;
     }
-    setLoading(true);
-    try {
-      if (isEdit) {
-        await updateTemplate({
-          templateId: template._id,
-          title: title.trim(),
-          description: description.trim() || null,
-          taskType: taskType as Doc<"recurringTaskTemplates">["taskType"],
-          priority: priority as Doc<"recurringTaskTemplates">["priority"],
-          epicId: epicId ? (epicId as Id<"epics">) : undefined,
-          recurrence,
-          dayOfWeek: recurrence === "weekly" ? dayOfWeek : undefined,
-          dayOfMonth: recurrence === "monthly" ? dayOfMonth : undefined,
-        });
-        toast.success("Recurring task updated.");
-      } else {
-        await createTemplate({
-          projectId,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          taskType: taskType as Doc<"recurringTaskTemplates">["taskType"],
-          priority: priority as Doc<"recurringTaskTemplates">["priority"],
-          epicId: epicId ? (epicId as Id<"epics">) : undefined,
-          recurrence,
-          dayOfWeek: recurrence === "weekly" ? dayOfWeek : undefined,
-          dayOfMonth: recurrence === "monthly" ? dayOfMonth : undefined,
-        });
-        toast.success("Recurring task created.");
-      }
-      onClose();
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const payload = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      taskType,
+      priority,
+      epicId: epicId || undefined,
+      recurrence,
+      dayOfWeek: recurrence === "weekly" ? dayOfWeek : undefined,
+      dayOfMonth: recurrence === "monthly" ? dayOfMonth : undefined,
+    };
+
+    if (isEdit) {
+      updateTemplate.mutate({ id: template.id, data: payload });
+    } else {
+      createTemplate.mutate({ projectId, ...payload });
     }
   }
 
@@ -205,7 +217,7 @@ export function RecurringTaskForm({
               >
                 <option value="">No epic</option>
                 {openEpics.map((epic) => (
-                  <option key={epic._id} value={epic._id}>{epic.name}</option>
+                  <option key={epic.id} value={epic.id}>{epic.name}</option>
                 ))}
               </select>
             </DetailRow>

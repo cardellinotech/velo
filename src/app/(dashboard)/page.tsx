@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/Button";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 import { TimerDisplay } from "@/components/timer/TimerDisplay";
@@ -80,39 +81,72 @@ function StatCard({
 
 export default function DashboardPage() {
   const toast = useToast();
-  const user = useQuery(api.users.current);
-  const activeTimer = useQuery(api.timeEntries.getActive);
-  const statsData = useQuery(api.dashboard.stats);
-  const recentTasksData = useQuery(api.dashboard.recentTasks);
+  const queryClient = useQueryClient();
 
-  const stopMutation = useMutation(api.timeEntries.stop);
+  const { data: user } = useQuery({
+    queryKey: queryKeys.user.me(),
+    queryFn: () => api.user.me(),
+  });
 
-  const activeTimerTask = useQuery(
-    api.tasks.get,
-    activeTimer ? { taskId: activeTimer.taskId } : "skip"
-  );
-  const activeTimerProject = useQuery(
-    api.projects.get,
-    activeTimerTask ? { projectId: activeTimerTask.projectId } : "skip"
-  );
+  const { data: activeTimer } = useQuery({
+    queryKey: queryKeys.timeEntries.active(),
+    queryFn: () => api.timeEntries.getActive(),
+  });
+
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: queryKeys.dashboard.stats(),
+    queryFn: () => api.dashboard.stats(),
+  });
+
+  const { data: recentTasksData, isLoading: tasksLoading } = useQuery({
+    queryKey: queryKeys.dashboard.recentTasks(),
+    queryFn: () => api.dashboard.recentTasks(),
+  });
+
+  const { data: activeTimerTask } = useQuery({
+    queryKey: queryKeys.tasks.detail(activeTimer?.taskId ?? ""),
+    queryFn: () => api.tasks.get(activeTimer!.taskId),
+    enabled: !!activeTimer?.taskId,
+  });
+
+  const { data: activeTimerProject } = useQuery({
+    queryKey: queryKeys.projects.detail(activeTimerTask?.projectId ?? ""),
+    queryFn: () => api.projects.get(activeTimerTask!.projectId),
+    enabled: !!activeTimerTask?.projectId,
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: () => api.timeEntries.stop(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeEntries.active() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+    },
+  });
 
   async function handleStopTimer() {
     if (!activeTimer) return;
     try {
-      await stopMutation({ timeEntryId: activeTimer._id });
+      await stopMutation.mutateAsync();
       toast.success("Timer stopped");
     } catch {
       toast.error("Failed to stop timer");
     }
   }
 
-  const isLoading = statsData === undefined || recentTasksData === undefined;
-  const isEmpty = !isLoading && recentTasksData.length === 0 && statsData.activeProjectCount === 0;
+  const isLoading = statsLoading || tasksLoading;
 
-  const statValues = isLoading ? [] : [
-    { ...statConfigs[0], value: statsData.activeProjectCount },
-    { ...statConfigs[1], value: statsData.inProgressTaskCount },
-    { ...statConfigs[2], value: formatDurationShort(statsData.todayTotalDuration) },
+  const stats = statsData as {
+    activeProjectCount: number;
+    inProgressTaskCount: number;
+    todayTotalDuration: number;
+  } | undefined;
+
+  const isEmpty = !isLoading && recentTasksData && recentTasksData.length === 0 && stats && stats.activeProjectCount === 0;
+
+  const statValues = isLoading || !stats ? [] : [
+    { ...statConfigs[0], value: stats.activeProjectCount },
+    { ...statConfigs[1], value: stats.inProgressTaskCount },
+    { ...statConfigs[2], value: formatDurationShort(stats.todayTotalDuration) },
   ];
 
   return (
@@ -236,7 +270,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         /* Recent activity */
-        !isLoading && recentTasksData.length > 0 && (
+        !isLoading && recentTasksData && recentTasksData.length > 0 && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-text-primary">Recent Activity</h2>
@@ -245,8 +279,8 @@ export default function DashboardPage() {
             <div className="bg-white rounded-xl shadow-card border border-border overflow-hidden divide-y divide-border">
               {recentTasksData.map((task) => (
                 <Link
-                  key={task._id}
-                  href={`/tasks/${task._id}`}
+                  key={task.id}
+                  href={`/tasks/${task.id}`}
                   className="flex items-center gap-3 px-5 py-3.5 hover:bg-surface/70 transition-colors duration-100 group"
                 >
                   <TaskTypeBadge taskType={task.taskType} />
@@ -254,7 +288,7 @@ export default function DashboardPage() {
                     {task.title}
                   </span>
                   <span className="text-xs text-text-secondary shrink-0 bg-surface px-2 py-0.5 rounded-md">
-                    {task.projectName}
+                    {(task as unknown as { projectName?: string }).projectName}
                   </span>
                   <span className="text-xs text-text-muted shrink-0 ml-1">
                     {formatTimeAgo(task.updatedAt)}

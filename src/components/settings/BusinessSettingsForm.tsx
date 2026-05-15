@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/hooks/useToast";
@@ -37,8 +38,24 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 export function BusinessSettingsForm() {
   const toast = useToast();
-  const settings = useQuery(api.userSettings.get);
-  const upsert = useMutation(api.userSettings.upsert);
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: queryKeys.userSettings.all(),
+    queryFn: () => api.userSettings.get(),
+  });
+
+  const upsert = useMutation({
+    mutationFn: (data: Parameters<typeof api.userSettings.update>[0]) =>
+      api.userSettings.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userSettings.all() });
+      toast.success("Settings saved.");
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
+  });
 
   const [defaultCurrency, setDefaultCurrency] = useState("EUR");
   const [businessName, setBusinessName] = useState("");
@@ -51,7 +68,6 @@ export function BusinessSettingsForm() {
   const [paymentTermDays, setPaymentTermDays] = useState("");
   const [invoicePrefix, setInvoicePrefix] = useState("RE");
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState("1");
-  const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -78,30 +94,22 @@ export function BusinessSettingsForm() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    try {
-      await upsert({
-        defaultCurrency,
-        businessName: businessName.trim() || undefined,
-        businessAddress: businessAddress.trim() || undefined,
-        vatId: vatId.trim() || undefined,
-        taxRate: taxRate.trim() ? parseFloat(taxRate) : undefined,
-        bankName: bankName.trim() || undefined,
-        iban: iban.trim() || undefined,
-        bic: bic.trim() || undefined,
-        paymentTermDays: paymentTermDays.trim() ? parseInt(paymentTermDays, 10) : undefined,
-        invoicePrefix: invoicePrefix.trim() || undefined,
-        nextInvoiceNumber: parseInt(nextInvoiceNumber || "1", 10),
-      });
-      toast.success("Settings saved.");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    upsert.mutate({
+      defaultCurrency,
+      businessName: businessName.trim() || undefined,
+      businessAddress: businessAddress.trim() || undefined,
+      vatId: vatId.trim() || undefined,
+      taxRate: taxRate.trim() ? taxRate.trim() : undefined,
+      bankName: bankName.trim() || undefined,
+      iban: iban.trim() || undefined,
+      bic: bic.trim() || undefined,
+      paymentTermDays: paymentTermDays.trim() ? parseInt(paymentTermDays, 10) : undefined,
+      invoicePrefix: invoicePrefix.trim() || undefined,
+      nextInvoiceNumber: parseInt(nextInvoiceNumber || "1", 10),
+    });
   }
 
-  if (settings === undefined) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-5 max-w-xl animate-pulse">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -268,7 +276,7 @@ export function BusinessSettingsForm() {
       </SectionCard>
 
       <div className="flex justify-end">
-        <Button type="submit" loading={saving} className="w-full sm:w-auto">
+        <Button type="submit" loading={upsert.isPending} className="w-full sm:w-auto">
           Save settings
         </Button>
       </div>

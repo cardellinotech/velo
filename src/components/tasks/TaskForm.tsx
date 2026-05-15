@@ -1,20 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useToast } from "@/hooks/useToast";
 import { TASK_TYPES, PRIORITIES } from "@/lib/constants";
-import type { TaskStatus } from "@/lib/constants";
+import type { TaskStatus, TaskType, Priority } from "@/lib/constants";
 
 interface TaskFormProps {
   open: boolean;
   onClose: () => void;
-  projectId: Id<"projects">;
+  projectId: string;
   initialStatus?: TaskStatus;
 }
 
@@ -25,8 +25,26 @@ export function TaskForm({
   initialStatus = "todo",
 }: TaskFormProps) {
   const toast = useToast();
-  const createTask = useMutation(api.tasks.create);
-  const epics = useQuery(api.epics.listByProject, { projectId });
+  const queryClient = useQueryClient();
+
+  const { data: epics } = useQuery({
+    queryKey: queryKeys.epics.byProject(projectId),
+    queryFn: () => api.epics.listByProject(projectId),
+  });
+
+  const { mutateAsync: createTask } = useMutation({
+    mutationFn: (data: {
+      projectId: string;
+      epicId?: string;
+      title: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      taskType?: string;
+    }) => api.tasks.create(data),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) }),
+  });
 
   const [title, setTitle] = useState("");
   const [taskType, setTaskType] = useState<string>("task");
@@ -61,9 +79,9 @@ export function TaskForm({
       await createTask({
         projectId,
         title: title.trim(),
-        taskType: taskType as Doc<"tasks">["taskType"],
-        epicId: epicId ? (epicId as Id<"epics">) : undefined,
-        priority: priority as Doc<"tasks">["priority"],
+        taskType: taskType as TaskType,
+        epicId: epicId || undefined,
+        priority: priority as Priority,
         description: description.trim() || undefined,
         status: initialStatus,
       });
@@ -144,7 +162,7 @@ export function TaskForm({
               >
                 <option value="">No epic</option>
                 {openEpics.map((epic) => (
-                  <option key={epic._id} value={epic._id}>{epic.name}</option>
+                  <option key={epic.id} value={epic.id}>{epic.name}</option>
                 ))}
               </select>
             </DetailRow>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { api } from "@/lib/api";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,7 @@ interface ProjectFormProps {
   onClose: () => void;
   // If provided, edit mode; otherwise create mode
   project?: {
-    _id: Id<"projects">;
+    id: string;
     name: string;
     clientName?: string;
     description?: string;
@@ -27,8 +27,7 @@ interface ProjectFormProps {
 
 export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
   const toast = useToast();
-  const createProject = useMutation(api.projects.create);
-  const updateProject = useMutation(api.projects.update);
+  const queryClient = useQueryClient();
 
   const [name, setName] = useState(project?.name ?? "");
   const [clientName, setClientName] = useState(project?.clientName ?? "");
@@ -39,6 +38,35 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
   const [loading, setLoading] = useState(false);
 
   const rateSymbol = currency ? getCurrencySymbol(currency) : "€";
+
+  const createMutation = useMutation({
+    mutationFn: (data: {
+      name: string;
+      clientName?: string;
+      description?: string;
+      hourlyRate?: number;
+      currency?: string;
+    }) => api.projects.create(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: {
+      name: string;
+      clientName?: string;
+      description?: string;
+      hourlyRate?: number;
+      currency?: string;
+    }) => api.projects.update(project!.id, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.active() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(project!.id) });
+    },
+  });
 
   function handleClose() {
     setName(project?.name ?? "");
@@ -59,25 +87,19 @@ export function ProjectForm({ open, onClose, project }: ProjectFormProps) {
     setNameError("");
     setLoading(true);
     const parsedRate = hourlyRate.trim() ? parseFloat(hourlyRate.trim()) : undefined;
+    const payload = {
+      name: name.trim(),
+      clientName: clientName.trim() || undefined,
+      description: description.trim() || undefined,
+      hourlyRate: parsedRate,
+      currency: currency || undefined,
+    };
     try {
       if (project) {
-        await updateProject({
-          projectId: project._id,
-          name: name.trim(),
-          clientName: clientName.trim() || undefined,
-          description: description.trim() || undefined,
-          hourlyRate: parsedRate,
-          currency: currency || undefined,
-        });
+        await updateMutation.mutateAsync(payload);
         toast.success("Project updated.");
       } else {
-        await createProject({
-          name: name.trim(),
-          clientName: clientName.trim() || undefined,
-          description: description.trim() || undefined,
-          hourlyRate: parsedRate,
-          currency: currency || undefined,
-        });
+        await createMutation.mutateAsync(payload);
         toast.success("Project created.");
         setName("");
         setClientName("");

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatAmount } from "@/lib/currency";
@@ -24,8 +24,9 @@ interface LineItem {
   amount: number;
 }
 
+// Extended type returned by the API (superset of the shared Invoice type)
 interface InvoiceData {
-  _id: Id<"invoices">;
+  id: string;
   invoiceNumber: string;
   status: InvoiceStatus;
   currency: string;
@@ -96,9 +97,7 @@ interface InvoiceFormProps {
 
 export function InvoiceForm({ invoice }: InvoiceFormProps) {
   const router = useRouter();
-  const updateInvoice = useMutation(api.invoices.update);
-  const updateStatus = useMutation(api.invoices.updateStatus);
-  const deleteInvoice = useMutation(api.invoices.deleteInvoice);
+  const queryClient = useQueryClient();
 
   const isDraft = invoice.status === "draft";
 
@@ -130,19 +129,40 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
     setPeriodStart(invoice.periodStart);
     setPeriodEnd(invoice.periodEnd);
     setPaymentTermDays(invoice.paymentTermDays ?? 14);
-  }, [invoice._id]);
+  }, [invoice.id]);
 
   const currency = invoice.currency;
   const subtotal = invoice.subtotal;
   const taxAmount = invoice.taxAmount;
   const total = invoice.total;
 
+  const updateMutation = useMutation({
+    mutationFn: (data: unknown) => api.invoices.update(invoice.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(invoice.id) });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: string) => api.invoices.updateStatus(invoice.id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.detail(invoice.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.invoices.delete(invoice.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.all() });
+    },
+  });
+
   async function handleSave() {
     setIsSaving(true);
     setSaveError(null);
     try {
-      await updateInvoice({
-        invoiceId: invoice._id,
+      await updateMutation.mutateAsync({
         senderName,
         senderAddress: senderAddress || undefined,
         clientName,
@@ -162,7 +182,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   async function handleMarkSent() {
     setIsMarkingSent(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "sent" });
+      await updateStatusMutation.mutateAsync("sent");
     } finally {
       setIsMarkingSent(false);
     }
@@ -171,7 +191,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   async function handleMarkPaid() {
     setIsMarkingPaid(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "paid" });
+      await updateStatusMutation.mutateAsync("paid");
     } finally {
       setIsMarkingPaid(false);
     }
@@ -180,7 +200,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   async function handleMarkOverdue() {
     setIsMarkingOverdue(true);
     try {
-      await updateStatus({ invoiceId: invoice._id, status: "overdue" });
+      await updateStatusMutation.mutateAsync("overdue");
     } finally {
       setIsMarkingOverdue(false);
     }
@@ -222,7 +242,7 @@ export function InvoiceForm({ invoice }: InvoiceFormProps) {
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      await deleteInvoice({ invoiceId: invoice._id });
+      await deleteMutation.mutateAsync();
       router.push("/invoices");
     } catch {
       setIsDeleting(false);

@@ -1,9 +1,9 @@
 "use client";
 
 import { use } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { InvoiceForm } from "@/components/invoices/InvoiceForm";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -14,11 +14,14 @@ export default function InvoiceDetailPage({
   params: Promise<{ invoiceId: string }>;
 }) {
   const { invoiceId } = use(params);
-  const invoice = useQuery(api.invoices.get, {
-    invoiceId: invoiceId as Id<"invoices">,
+
+  const { data: invoice, isLoading } = useQuery({
+    queryKey: queryKeys.invoices.detail(invoiceId),
+    queryFn: () => api.invoices.get(invoiceId),
+    enabled: !!invoiceId,
   });
 
-  if (invoice === undefined) {
+  if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto flex flex-col gap-6">
         <div className="flex items-center gap-2 text-xs text-text-muted">
@@ -39,7 +42,7 @@ export default function InvoiceDetailPage({
     );
   }
 
-  if (invoice === null) {
+  if (!invoice) {
     return (
       <div className="max-w-3xl mx-auto flex flex-col gap-4">
         <Link href="/invoices" className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors">
@@ -51,5 +54,7 @@ export default function InvoiceDetailPage({
     );
   }
 
-  return <InvoiceForm invoice={invoice} />;
+  // The API returns an extended invoice object with fields like senderName, projectName, etc.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <InvoiceForm invoice={invoice as any} />;
 }
