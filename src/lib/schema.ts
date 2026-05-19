@@ -382,3 +382,23 @@ export const codaSyncLog = pgTable(
     index("coda_log_config_id_idx").on(t.configId),
   ]
 );
+
+export const wikiPages = pgTable(
+  "wiki_pages",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    content: text("content").notNull().default(""),
+    tags: text("tags").array().notNull().default([]),
+    parentPageId: text("parent_page_id"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("wiki_pages_user_id_idx").on(t.userId),
+  ]
+);

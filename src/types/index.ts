@@ -141,6 +141,18 @@ export interface User {
   createdAt: number;
 }
 
+export type WikiPage = {
+  id: string;
+  userId: string;
+  title: string;
+  slug: string;
+  content: string;
+  tags: string[];
+  parentPageId: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;

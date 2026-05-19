@@ -9,6 +9,7 @@ import type {
   Invoice,
   UserSettings,
   BillingEntry,
+  WikiPage,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -263,6 +264,30 @@ export const api = {
   dashboard: {
     stats: () => fetchJson<unknown>("/api/dashboard/stats"),
     recentTasks: () => fetchJson<Task[]>("/api/dashboard/recent-tasks"),
+  },
+  wiki: {
+    list: (params?: { tag?: string; search?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.tag) qs.set("tag", params.tag);
+      if (params?.search) qs.set("search", params.search);
+      const q = qs.toString();
+      return fetchJson<WikiPage[]>(`/api/wiki${q ? `?${q}` : ""}`);
+    },
+    get: (slug: string) => fetchJson<WikiPage>(`/api/wiki/${slug}`),
+    create: (data: { title: string; content?: string; tags?: string[]; parentPageId?: string }) =>
+      fetchJson<WikiPage>("/api/wiki", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    update: (slug: string, data: { title?: string; content?: string; tags?: string[]; parentPageId?: string }) =>
+      fetchJson<WikiPage>(`/api/wiki/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    delete: (slug: string) =>
+      fetchJson<void>(`/api/wiki/${slug}`, { method: "DELETE" }),
   },
   coda: {
     getConfig: (projectId: string) =>

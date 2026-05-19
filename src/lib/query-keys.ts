@@ -51,4 +51,8 @@ export const queryKeys = {
     config: (projectId: string) => ["coda", "config", projectId] as const,
     history: (projectId: string) => ["coda", "config", projectId, "history"] as const,
   },
+  wiki: {
+    list: (params?: { tag?: string; search?: string }) => ["wiki", "list", params] as const,
+    detail: (slug: string) => ["wiki", "detail", slug] as const,
+  },
 } as const;
