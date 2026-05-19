@@ -29,6 +29,13 @@ export default function WeekPage() {
     queryFn: () => api.timeBlocks.listByWeek(weekStart),
   });
 
+  const { data: googleEvents = [] } = useQuery({
+    queryKey: ["google-calendar", "events", weekStart],
+    queryFn: () => api.googleCalendar.events(weekStart),
+    // Don't throw on error — calendar is optional
+    retry: false,
+  });
+
   const { data: projects = [] } = useQuery({
     queryKey: queryKeys.projects.active(),
     queryFn: () => api.projects.listActive(),
@@ -83,6 +90,7 @@ export default function WeekPage() {
         <WeekCalendar
           weekStart={weekStart}
           timeBlocks={timeBlocks}
+          googleEvents={googleEvents}
           onBlockClick={openEditForm}
           onSlotClick={(date, time) => openCreateForm(date, time)}
         />

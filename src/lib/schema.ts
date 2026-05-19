@@ -428,3 +428,23 @@ export const timeBlocks = pgTable(
     index("time_blocks_user_date_idx").on(t.userId, t.date),
   ]
 );
+
+export const googleCalendarTokens = pgTable(
+  "google_calendar_tokens",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+    calendarId: text("calendar_id").notNull().default("primary"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("google_calendar_tokens_user_id_idx").on(t.userId),
+  ]
+);

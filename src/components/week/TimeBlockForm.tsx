@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
 import type { Project, TimeBlock } from "@/types";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Calendar } from "lucide-react";
 
 interface TimeBlockFormProps {
   open: boolean;
@@ -29,9 +29,18 @@ export function TimeBlockForm({ open, onClose, projects, initialDate, initialTim
   const [projectId, setProjectId] = useState("");
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [notes, setNotes] = useState("");
+  const [syncToCalendar, setSyncToCalendar] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: calendarStatus } = useQuery({
+    queryKey: ["google-calendar", "status"],
+    queryFn: () => api.googleCalendar.status(),
+    retry: false,
+  });
+
+  const calendarConnected = calendarStatus?.connected ?? false;
 
   useEffect(() => {
     if (!open) return;
@@ -58,6 +67,7 @@ export function TimeBlockForm({ open, onClose, projects, initialDate, initialTim
       setProjectId("");
       setColor(DEFAULT_COLOR);
       setNotes("");
+      setSyncToCalendar(false);
     }
     setError(null);
   }, [open, block, initialDate, initialTime]);
@@ -95,6 +105,7 @@ export function TimeBlockForm({ open, onClose, projects, initialDate, initialTim
           projectId: projectId || undefined,
           color: color || undefined,
           notes: notes.trim() || undefined,
+          syncToCalendar: syncToCalendar && calendarConnected,
         });
       }
       await qc.invalidateQueries({ queryKey: queryKeys.timeBlocks.byWeek(weekStart) });
@@ -242,6 +253,22 @@ export function TimeBlockForm({ open, onClose, projects, initialDate, initialTim
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.06] transition-all resize-none"
             />
           </div>
+
+          {/* Google Calendar sync toggle — only for new blocks when connected */}
+          {!block && calendarConnected && (
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={syncToCalendar}
+                onChange={(e) => setSyncToCalendar(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-blue-500"
+              />
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <Calendar className="w-3 h-3 text-blue-400" />
+                In Google Calendar speichern
+              </span>
+            </label>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-1">

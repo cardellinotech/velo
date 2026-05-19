@@ -2,7 +2,7 @@
 
 import { addDays, format } from "date-fns";
 import { de } from "date-fns/locale";
-import type { TimeBlock } from "@/types";
+import type { TimeBlock, GoogleCalendarEvent } from "@/types";
 import { TimeBlockItem } from "./TimeBlockItem";
 
 const HOUR_START = 8;
@@ -17,6 +17,7 @@ const halfHours = Array.from({ length: TOTAL_HOURS * 2 }, (_, i) => i);
 interface WeekCalendarProps {
   weekStart: string;
   timeBlocks: TimeBlock[];
+  googleEvents?: GoogleCalendarEvent[];
   onBlockClick: (block: TimeBlock) => void;
   onSlotClick: (date: string, time: string) => void;
 }
@@ -33,7 +34,7 @@ function snapTime(px: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-export function WeekCalendar({ weekStart, timeBlocks, onBlockClick, onSlotClick }: WeekCalendarProps) {
+export function WeekCalendar({ weekStart, timeBlocks, googleEvents = [], onBlockClick, onSlotClick }: WeekCalendarProps) {
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(new Date(weekStart + "T00:00:00"), i);
     return {
@@ -44,6 +45,10 @@ export function WeekCalendar({ weekStart, timeBlocks, onBlockClick, onSlotClick 
 
   function blocksForDay(date: string) {
     return timeBlocks.filter((b) => b.date === date);
+  }
+
+  function googleEventsForDay(date: string) {
+    return googleEvents.filter((e) => e.date === date);
   }
 
   function handleDayClick(e: React.MouseEvent<HTMLDivElement>, date: string) {
@@ -99,6 +104,34 @@ export function WeekCalendar({ weekStart, timeBlocks, onBlockClick, onSlotClick 
                 style={{ top: i * 30 }}
               />
             ))}
+
+            {/* Google Calendar events (read-only) */}
+            {googleEventsForDay(date).map((event) => {
+              const startMin = toMinutes(event.startTime);
+              const endMin = toMinutes(event.endTime);
+              const top = Math.max(0, startMin) * PX_PER_MINUTE;
+              const height = Math.max(15, (endMin - startMin)) * PX_PER_MINUTE;
+              return (
+                <div
+                  key={`gcal-${event.id}`}
+                  className="absolute left-0 right-0 px-0.5"
+                  style={{ top, height }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    className="h-full rounded border border-dashed border-blue-400/60 bg-blue-500/10 px-1.5 py-0.5 overflow-hidden"
+                    title={event.title}
+                  >
+                    <p className="text-[10px] font-medium text-blue-300 truncate leading-tight">
+                      {event.title}
+                    </p>
+                    <p className="text-[9px] text-blue-400/70 truncate">
+                      {event.startTime} - {event.endTime}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
 
             {/* Time blocks */}
             {blocksForDay(date).map((block) => {

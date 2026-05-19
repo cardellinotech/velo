@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/session";
 import { timeBlocks, projects } from "@/lib/schema";
 import { eq, and, gte, lt } from "drizzle-orm";
+import { createGoogleEvent } from "@/lib/googleCalendar";
 
 function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") {
@@ -73,9 +74,10 @@ export async function POST(req: NextRequest) {
       taskId?: string;
       color?: string;
       notes?: string;
+      syncToCalendar?: boolean;
     };
 
-    const { title, date, startTime, endTime, projectId, taskId, color, notes } = body;
+    const { title, date, startTime, endTime, projectId, taskId, color, notes, syncToCalendar } = body;
 
     if (!title || !date || !startTime || !endTime) {
       return NextResponse.json({ error: "title, date, startTime, endTime are required" }, { status: 400 });
@@ -104,6 +106,23 @@ export async function POST(req: NextRequest) {
         updatedAt: now,
       })
       .returning();
+
+    // Sync to Google Calendar if requested
+    if (syncToCalendar === true) {
+      try {
+        const googleEventId = await createGoogleEvent(userId, { title, date, startTime, endTime, notes });
+        if (googleEventId) {
+          await db
+            .update(timeBlocks)
+            .set({ googleEventId, updatedAt: Date.now() })
+            .where(eq(timeBlocks.id, block.id));
+          block.googleEventId = googleEventId;
+        }
+      } catch (calErr) {
+        // Log but don't fail the request — calendar sync is optional
+        console.error("[time-blocks POST] Google Calendar sync failed:", calErr);
+      }
+    }
 
     // Enrich with project name
     let projectName: string | null = null;

@@ -11,6 +11,7 @@ import type {
   BillingEntry,
   WikiPage,
   TimeBlock,
+  GoogleCalendarEvent,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -296,6 +297,7 @@ export const api = {
     create: (data: {
       title: string; date: string; startTime: string; endTime: string;
       projectId?: string; taskId?: string; color?: string; notes?: string;
+      syncToCalendar?: boolean;
     }) =>
       fetchJson<TimeBlock>("/api/time-blocks", {
         method: "POST",
@@ -310,6 +312,17 @@ export const api = {
       }),
     delete: (id: string) =>
       fetchJson<void>(`/api/time-blocks/${id}`, { method: "DELETE" }),
+  },
+  googleCalendar: {
+    events: (weekStart: string) =>
+      fetchJson<GoogleCalendarEvent[]>(`/api/google-calendar/events?weekStart=${weekStart}`),
+    connect: () => {
+      window.location.href = "/api/auth/google-calendar";
+    },
+    disconnect: () =>
+      fetchJson<void>("/api/auth/google-calendar/disconnect", { method: "DELETE" }),
+    status: () =>
+      fetchJson<{ connected: boolean }>("/api/google-calendar/status"),
   },
   coda: {
     getConfig: (projectId: string) =>

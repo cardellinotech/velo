@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/session";
 import { timeBlocks, projects } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
+import { updateGoogleEvent, deleteGoogleEvent } from "@/lib/googleCalendar";
 
 function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") {
@@ -69,6 +70,20 @@ export async function PUT(
       .where(and(eq(timeBlocks.id, id), eq(timeBlocks.userId, userId)))
       .returning();
 
+    // Sync to Google Calendar if the block has a googleEventId
+    if (updated.googleEventId) {
+      try {
+        await updateGoogleEvent(userId, updated.googleEventId, {
+          title: updated.title,
+          date: updated.date,
+          startTime: updated.startTime,
+          endTime: updated.endTime,
+        });
+      } catch (calErr) {
+        console.error("[time-blocks PUT] Google Calendar sync failed:", calErr);
+      }
+    }
+
     // Enrich with project name
     let projectName: string | null = null;
     if (updated.projectId) {
@@ -102,6 +117,15 @@ export async function DELETE(
 
     if (!existing) {
       throw new Error("NOT_FOUND");
+    }
+
+    // Sync deletion to Google Calendar if the block has a googleEventId
+    if (existing.googleEventId) {
+      try {
+        await deleteGoogleEvent(userId, existing.googleEventId);
+      } catch (calErr) {
+        console.error("[time-blocks DELETE] Google Calendar sync failed:", calErr);
+      }
     }
 
     await db

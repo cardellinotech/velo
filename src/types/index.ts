@@ -172,6 +172,15 @@ export type TimeBlock = {
   projectColor?: string | null;
 };
 
+export type GoogleCalendarEvent = {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isGoogleEvent: true;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;
