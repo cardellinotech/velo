@@ -7,6 +7,7 @@ import { de } from "date-fns/locale";
 import { Plus, X, CheckCircle2, Circle, ClipboardList } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import type { WeeklyGoalsRecord } from "@/types";
 
 interface WeeklyGoalsPanelProps {
@@ -16,6 +17,7 @@ interface WeeklyGoalsPanelProps {
 
 export function WeeklyGoalsPanel({ weekStart, onReviewClick }: WeeklyGoalsPanelProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [newGoalText, setNewGoalText] = useState("");
   const [addingGoal, setAddingGoal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,6 +47,9 @@ export function WeeklyGoalsPanel({ weekStart, onReviewClick }: WeeklyGoalsPanelP
     try {
       await api.weeklyGoals.upsert({ weekStart, goals: updatedGoals });
       await queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoals.byWeek(weekStart) });
+    } catch (error) {
+      console.error("Error saving goals:", error);
+      toast.error("Ziele konnten nicht gespeichert werden.");
     } finally {
       setSaving(false);
     }

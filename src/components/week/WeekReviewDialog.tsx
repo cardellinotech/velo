@@ -7,6 +7,7 @@ import { de } from "date-fns/locale";
 import { X, CheckCircle2, Circle } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import type { WeeklyGoalsRecord } from "@/types";
 
 interface WeekReviewDialogProps {
@@ -18,6 +19,7 @@ interface WeekReviewDialogProps {
 
 export function WeekReviewDialog({ open, onClose, weekStart, record }: WeekReviewDialogProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [reviewText, setReviewText] = useState(record?.weekReview ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -51,6 +53,9 @@ export function WeekReviewDialog({ open, onClose, weekStart, record }: WeekRevie
       await api.weeklyGoals.upsert({ weekStart, weekReview: reviewText });
       await queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoals.byWeek(weekStart) });
       onClose();
+    } catch (error) {
+      console.error("Error saving week review:", error);
+      toast.error("Rückblick konnte nicht gespeichert werden.");
     } finally {
       setSaving(false);
     }
