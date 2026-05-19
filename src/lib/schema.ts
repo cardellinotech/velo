@@ -478,3 +478,33 @@ export const weeklyGoals = pgTable(
     uniqueIndex("weekly_goals_user_week_unique").on(t.userId, t.weekStart),
   ]
 );
+
+// ---------------------------------------------------------------------------
+// Monthly Goals & Review (Phase 16)
+// ---------------------------------------------------------------------------
+
+export type MonthlyGoal = {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  order: number;
+};
+
+export const monthlyGoals = pgTable(
+  "monthly_goals",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    month: text("month").notNull(), // "YYYY-MM"
+    goals: jsonb("goals").notNull().default([]).$type<MonthlyGoal[]>(),
+    monthReview: text("month_review"),
+    reviewedAt: bigint("reviewed_at", { mode: "number" }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("monthly_goals_user_month_unique").on(t.userId, t.month),
+  ]
+);

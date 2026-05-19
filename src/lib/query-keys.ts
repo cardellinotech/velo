@@ -61,4 +61,10 @@ export const queryKeys = {
   weeklyGoals: {
     byWeek: (weekStart: string) => ["weekly-goals", weekStart] as const,
   },
+  monthlyGoals: {
+    byMonth: (month: string) => ["monthly-goals", month] as const,
+  },
+  monthStats: {
+    byMonth: (month: string) => ["month-stats", month] as const,
+  },
 } as const;

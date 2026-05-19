@@ -13,6 +13,9 @@ import type {
   TimeBlock,
   GoogleCalendarEvent,
   WeeklyGoalsRecord,
+  MonthlyGoal,
+  MonthlyGoalsRecord,
+  MonthStats,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -334,6 +337,20 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
+  },
+  monthlyGoals: {
+    get: (month: string) =>
+      fetchJson<MonthlyGoalsRecord | null>(`/api/monthly-goals?month=${month}`),
+    upsert: (data: { month: string; goals?: MonthlyGoal[]; monthReview?: string }) =>
+      fetchJson<MonthlyGoalsRecord>("/api/monthly-goals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+  },
+  monthStats: {
+    get: (month: string) =>
+      fetchJson<MonthStats>(`/api/month-stats?month=${month}`),
   },
   coda: {
     getConfig: (projectId: string) =>

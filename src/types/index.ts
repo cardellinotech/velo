@@ -192,6 +192,27 @@ export type WeeklyGoalsRecord = {
   updatedAt: number;
 };
 
+export type MonthlyGoal = { id: string; text: string; isCompleted: boolean; order: number };
+
+export type MonthlyGoalsRecord = {
+  id: string;
+  userId: string;
+  month: string;
+  goals: MonthlyGoal[];
+  monthReview: string | null;
+  reviewedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type MonthStats = {
+  totalHours: number;
+  totalRevenue: number;
+  totalTasks: number;
+  completedTasks: number;
+  activeProjects: number;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;
