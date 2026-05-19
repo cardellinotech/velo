@@ -404,3 +404,27 @@ export const wikiPages = pgTable(
     uniqueIndex("wiki_pages_user_slug_unique").on(t.userId, t.slug),
   ]
 );
+
+export const timeBlocks = pgTable(
+  "time_blocks",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    date: text("date").notNull(), // "YYYY-MM-DD"
+    startTime: text("start_time").notNull(), // "HH:MM"
+    endTime: text("end_time").notNull(), // "HH:MM"
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    color: text("color"),
+    googleEventId: text("google_event_id"), // reserved for Phase 14
+    notes: text("notes"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("time_blocks_user_date_idx").on(t.userId, t.date),
+  ]
+);

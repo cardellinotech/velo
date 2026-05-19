@@ -10,6 +10,7 @@ import type {
   UserSettings,
   BillingEntry,
   WikiPage,
+  TimeBlock,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -288,6 +289,27 @@ export const api = {
       }),
     delete: (slug: string) =>
       fetchJson<void>(`/api/wiki/${slug}`, { method: "DELETE" }),
+  },
+  timeBlocks: {
+    listByWeek: (weekStart: string) =>
+      fetchJson<TimeBlock[]>(`/api/time-blocks?weekStart=${weekStart}`),
+    create: (data: {
+      title: string; date: string; startTime: string; endTime: string;
+      projectId?: string; taskId?: string; color?: string; notes?: string;
+    }) =>
+      fetchJson<TimeBlock>("/api/time-blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Partial<TimeBlock>) =>
+      fetchJson<TimeBlock>(`/api/time-blocks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      fetchJson<void>(`/api/time-blocks/${id}`, { method: "DELETE" }),
   },
   coda: {
     getConfig: (projectId: string) =>

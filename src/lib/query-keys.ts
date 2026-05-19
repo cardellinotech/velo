@@ -55,4 +55,7 @@ export const queryKeys = {
     list: (params?: { tag?: string; search?: string }) => ["wiki", "list", params] as const,
     detail: (slug: string) => ["wiki", "detail", slug] as const,
   },
+  timeBlocks: {
+    byWeek: (weekStart: string) => ["time-blocks", "week", weekStart] as const,
+  },
 } as const;

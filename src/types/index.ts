@@ -153,6 +153,25 @@ export type WikiPage = {
   updatedAt: number;
 };
 
+export type TimeBlock = {
+  id: string;
+  userId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  projectId: string | null;
+  taskId: string | null;
+  color: string | null;
+  googleEventId: string | null;
+  notes: string | null;
+  createdAt: number;
+  updatedAt: number;
+  // Enriched fields:
+  projectName?: string | null;
+  projectColor?: string | null;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;
