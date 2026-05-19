@@ -181,6 +181,17 @@ export type GoogleCalendarEvent = {
   isGoogleEvent: true;
 };
 
+export type WeeklyGoalsRecord = {
+  id: string;
+  userId: string;
+  weekStart: string;
+  goals: Array<{ id: string; text: string; isCompleted: boolean; order: number }>;
+  weekReview: string | null;
+  reviewedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;

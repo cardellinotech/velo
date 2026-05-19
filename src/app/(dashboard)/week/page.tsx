@@ -10,6 +10,8 @@ import type { TimeBlock } from "@/types";
 import { WeekNavigation } from "@/components/week/WeekNavigation";
 import { WeekCalendar } from "@/components/week/WeekCalendar";
 import { TimeBlockForm } from "@/components/week/TimeBlockForm";
+import { WeeklyGoalsPanel } from "@/components/week/WeeklyGoalsPanel";
+import { WeekReviewDialog } from "@/components/week/WeekReviewDialog";
 
 function getCurrentWeekStart(): string {
   const today = new Date();
@@ -23,6 +25,7 @@ export default function WeekPage() {
   const [selectedBlock, setSelectedBlock] = useState<TimeBlock | undefined>(undefined);
   const [initialDate, setInitialDate] = useState<string | undefined>(undefined);
   const [initialTime, setInitialTime] = useState<string | undefined>(undefined);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const { data: timeBlocks = [] } = useQuery({
     queryKey: queryKeys.timeBlocks.byWeek(weekStart),
@@ -39,6 +42,11 @@ export default function WeekPage() {
   const { data: projects = [] } = useQuery({
     queryKey: queryKeys.projects.active(),
     queryFn: () => api.projects.listActive(),
+  });
+
+  const { data: weeklyGoalsRecord } = useQuery({
+    queryKey: queryKeys.weeklyGoals.byWeek(weekStart),
+    queryFn: () => api.weeklyGoals.get(weekStart),
   });
 
   function openCreateForm(date?: string, time?: string) {
@@ -85,15 +93,25 @@ export default function WeekPage() {
         </button>
       </div>
 
-      {/* Calendar */}
-      <div className="flex-1 overflow-hidden px-4 py-2">
-        <WeekCalendar
-          weekStart={weekStart}
-          timeBlocks={timeBlocks}
-          googleEvents={googleEvents}
-          onBlockClick={openEditForm}
-          onSlotClick={(date, time) => openCreateForm(date, time)}
-        />
+      {/* Calendar + Goals panel */}
+      <div className="flex gap-4 flex-1 min-h-0 overflow-hidden px-4 py-2">
+        {/* Calendar: takes remaining space */}
+        <div className="flex-1 min-w-0">
+          <WeekCalendar
+            weekStart={weekStart}
+            timeBlocks={timeBlocks}
+            googleEvents={googleEvents}
+            onBlockClick={openEditForm}
+            onSlotClick={(date, time) => openCreateForm(date, time)}
+          />
+        </div>
+        {/* Goals panel: fixed width */}
+        <div className="w-72 shrink-0">
+          <WeeklyGoalsPanel
+            weekStart={weekStart}
+            onReviewClick={() => setReviewOpen(true)}
+          />
+        </div>
       </div>
 
       {/* Form dialog */}
@@ -105,6 +123,14 @@ export default function WeekPage() {
         initialTime={initialTime}
         block={selectedBlock}
         weekStart={weekStart}
+      />
+
+      {/* Weekly review dialog */}
+      <WeekReviewDialog
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        weekStart={weekStart}
+        record={weeklyGoalsRecord}
       />
     </div>
   );

@@ -448,3 +448,33 @@ export const googleCalendarTokens = pgTable(
     index("google_calendar_tokens_user_id_idx").on(t.userId),
   ]
 );
+
+// ---------------------------------------------------------------------------
+// Weekly Goals & Review (Phase 15)
+// ---------------------------------------------------------------------------
+
+export type WeeklyGoal = {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  order: number;
+};
+
+export const weeklyGoals = pgTable(
+  "weekly_goals",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: text("week_start").notNull(), // "YYYY-MM-DD" (Monday)
+    goals: jsonb("goals").notNull().default([]).$type<WeeklyGoal[]>(),
+    weekReview: text("week_review"),
+    reviewedAt: bigint("reviewed_at", { mode: "number" }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("weekly_goals_user_week_unique").on(t.userId, t.weekStart),
+  ]
+);

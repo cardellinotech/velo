@@ -12,6 +12,7 @@ import type {
   WikiPage,
   TimeBlock,
   GoogleCalendarEvent,
+  WeeklyGoalsRecord,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -323,6 +324,16 @@ export const api = {
       fetchJson<void>("/api/auth/google-calendar/disconnect", { method: "DELETE" }),
     status: () =>
       fetchJson<{ connected: boolean }>("/api/google-calendar/status"),
+  },
+  weeklyGoals: {
+    get: (weekStart: string) =>
+      fetchJson<WeeklyGoalsRecord | null>(`/api/weekly-goals?weekStart=${weekStart}`),
+    upsert: (data: { weekStart: string; goals?: WeeklyGoalsRecord["goals"]; weekReview?: string }) =>
+      fetchJson<WeeklyGoalsRecord>("/api/weekly-goals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
   },
   coda: {
     getConfig: (projectId: string) =>

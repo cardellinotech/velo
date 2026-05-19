@@ -58,4 +58,7 @@ export const queryKeys = {
   timeBlocks: {
     byWeek: (weekStart: string) => ["time-blocks", "week", weekStart] as const,
   },
+  weeklyGoals: {
+    byWeek: (weekStart: string) => ["weekly-goals", weekStart] as const,
+  },
 } as const;
