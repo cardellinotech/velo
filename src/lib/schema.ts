@@ -9,6 +9,7 @@ import {
   timestamp,
   primaryKey,
   index,
+  uniqueIndex,
   numeric,
 } from "drizzle-orm/pg-core";
 
@@ -400,5 +401,6 @@ export const wikiPages = pgTable(
   },
   (t) => [
     index("wiki_pages_user_id_idx").on(t.userId),
+    uniqueIndex("wiki_pages_user_slug_unique").on(t.userId, t.slug),
   ]
 );

@@ -64,6 +64,10 @@ export async function PUT(
       parentPageId?: string;
     };
 
+    if (body.title !== undefined && !String(body.title).trim()) {
+      return NextResponse.json({ error: "title cannot be empty" }, { status: 400 });
+    }
+
     const updates: Partial<typeof existing> = {
       updatedAt: Date.now(),
     };

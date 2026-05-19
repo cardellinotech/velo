@@ -76,19 +76,18 @@ export async function POST(req: NextRequest) {
 
     const baseSlug = generateSlug(title.trim());
 
-    // Check slug uniqueness for this user
-    const existing = await db
-      .select({ slug: wikiPages.slug })
-      .from(wikiPages)
-      .where(eq(wikiPages.userId, userId));
-
-    const usedSlugs = new Set(existing.map((p) => p.slug));
-
+    // Check slug uniqueness iteratively — one query per attempt, no full table load
     let slug = baseSlug;
     let counter = 2;
-    while (usedSlugs.has(slug)) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
+    while (true) {
+      const [existing] = await db
+        .select({ id: wikiPages.id })
+        .from(wikiPages)
+        .where(and(eq(wikiPages.userId, userId), eq(wikiPages.slug, slug)))
+        .limit(1);
+      if (!existing) break;
+      slug = `${baseSlug}-${counter++}`;
+      if (counter > 100) { slug = `${baseSlug}-${Date.now()}`; break; } // safety valve
     }
 
     const now = Date.now();

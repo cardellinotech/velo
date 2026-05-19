@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 import { ArrowLeft, Save, Tag, X } from "lucide-react";
 
 export default function WikiNewPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -17,7 +19,8 @@ export default function WikiNewPage() {
   const createMutation = useMutation({
     mutationFn: () =>
       api.wiki.create({ title: title.trim(), content, tags }),
-    onSuccess: (page) => {
+    onSuccess: async (page) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wiki.list() });
       router.push(`/wiki/${page.slug}`);
     },
   });

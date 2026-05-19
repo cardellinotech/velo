@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useCallback } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -19,6 +19,7 @@ export default function WikiDetailPage({
 }) {
   const { slug } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: page, isLoading, isError } = useQuery({
     queryKey: queryKeys.wiki.detail(slug),
@@ -27,7 +28,8 @@ export default function WikiDetailPage({
 
   const deleteMutation = useMutation({
     mutationFn: () => api.wiki.delete(slug),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wiki.list() });
       router.push("/wiki");
     },
   });

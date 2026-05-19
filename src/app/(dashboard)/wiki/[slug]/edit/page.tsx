@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { ArrowLeft, Save, Tag, X } from "lucide-react";
@@ -15,6 +15,7 @@ export default function WikiEditPage({
 }) {
   const { slug } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -40,7 +41,9 @@ export default function WikiEditPage({
   const updateMutation = useMutation({
     mutationFn: () =>
       api.wiki.update(slug, { title: title.trim(), content, tags }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wiki.list() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.wiki.detail(slug) });
       router.push(`/wiki/${slug}`);
     },
   });
