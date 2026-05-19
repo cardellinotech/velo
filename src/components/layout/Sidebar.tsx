@@ -38,6 +38,14 @@ const settingsNavItems = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
+const habitsNavItems = [
+  { label: "Gewohnheiten", href: "/habits", icon: Repeat },
+];
+
+const wikiNavItems = [
+  { label: "Wiki", href: "/wiki", icon: BookOpen },
+];
+
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { data: projects } = useQuery({
@@ -109,7 +117,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                 "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
                 isActive("/")
                   ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
-                  : "text-slate-500 group-hover:text-slate-400"
+                  : "text-slate-500"
               )}>
                 <LayoutDashboard className="w-[18px] h-[18px]" />
               </div>
@@ -233,32 +241,34 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             Gewohnheiten
           </p>
           <ul className="flex flex-col gap-0.5">
-            <li>
-              <Link
-                href="/habits"
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
-                  isActive("/habits")
-                    ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
-                )}
-                aria-current={isActive("/habits") ? "page" : undefined}
-              >
-                <div className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
-                  isActive("/habits")
-                    ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
-                    : "text-slate-500 group-hover:text-slate-400"
-                )}>
-                  <Repeat className="w-[18px] h-[18px]" />
-                </div>
-                Gewohnheiten
-                {isActive("/habits") && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                )}
-              </Link>
-            </li>
+            {habitsNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
@@ -268,32 +278,34 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             Wissen
           </p>
           <ul className="flex flex-col gap-0.5">
-            <li>
-              <Link
-                href="/wiki"
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
-                  isActive("/wiki")
-                    ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
-                )}
-                aria-current={isActive("/wiki") ? "page" : undefined}
-              >
-                <div className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
-                  isActive("/wiki")
-                    ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
-                    : "text-slate-500 group-hover:text-slate-400"
-                )}>
-                  <BookOpen className="w-[18px] h-[18px]" />
-                </div>
-                Wiki
-                {isActive("/wiki") && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                )}
-              </Link>
-            </li>
+            {wikiNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
