@@ -36,6 +36,7 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+    restart: unless-stopped
 
 volumes:
   velo_pgdata:
