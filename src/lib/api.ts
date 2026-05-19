@@ -9,6 +9,15 @@ import type {
   Invoice,
   UserSettings,
   BillingEntry,
+  WikiPage,
+  TimeBlock,
+  GoogleCalendarEvent,
+  WeeklyGoalsRecord,
+  MonthlyGoal,
+  MonthlyGoalsRecord,
+  MonthStats,
+  Habit,
+  HabitLog,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -263,6 +272,99 @@ export const api = {
   dashboard: {
     stats: () => fetchJson<unknown>("/api/dashboard/stats"),
     recentTasks: () => fetchJson<Task[]>("/api/dashboard/recent-tasks"),
+  },
+  wiki: {
+    list: (params?: { tag?: string; search?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.tag) qs.set("tag", params.tag);
+      if (params?.search) qs.set("search", params.search);
+      const q = qs.toString();
+      return fetchJson<WikiPage[]>(`/api/wiki${q ? `?${q}` : ""}`);
+    },
+    get: (slug: string) => fetchJson<WikiPage>(`/api/wiki/${slug}`),
+    create: (data: { title: string; content?: string; tags?: string[]; parentPageId?: string }) =>
+      fetchJson<WikiPage>("/api/wiki", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    update: (slug: string, data: { title?: string; content?: string; tags?: string[]; parentPageId?: string }) =>
+      fetchJson<WikiPage>(`/api/wiki/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    delete: (slug: string) =>
+      fetchJson<void>(`/api/wiki/${slug}`, { method: "DELETE" }),
+  },
+  timeBlocks: {
+    listByWeek: (weekStart: string) =>
+      fetchJson<TimeBlock[]>(`/api/time-blocks?weekStart=${weekStart}`),
+    create: (data: {
+      title: string; date: string; startTime: string; endTime: string;
+      projectId?: string; taskId?: string; color?: string; notes?: string;
+      syncToCalendar?: boolean;
+    }) =>
+      fetchJson<TimeBlock>("/api/time-blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Partial<TimeBlock>) =>
+      fetchJson<TimeBlock>(`/api/time-blocks/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      fetchJson<void>(`/api/time-blocks/${id}`, { method: "DELETE" }),
+  },
+  googleCalendar: {
+    events: (weekStart: string) =>
+      fetchJson<GoogleCalendarEvent[]>(`/api/google-calendar/events?weekStart=${weekStart}`),
+    connect: () => {
+      window.location.href = "/api/auth/google-calendar";
+    },
+    disconnect: () =>
+      fetchJson<void>("/api/auth/google-calendar/disconnect", { method: "DELETE" }),
+    status: () =>
+      fetchJson<{ connected: boolean }>("/api/google-calendar/status"),
+  },
+  weeklyGoals: {
+    get: (weekStart: string) =>
+      fetchJson<WeeklyGoalsRecord | null>(`/api/weekly-goals?weekStart=${weekStart}`),
+    upsert: (data: { weekStart: string; goals?: WeeklyGoalsRecord["goals"]; weekReview?: string }) =>
+      fetchJson<WeeklyGoalsRecord>("/api/weekly-goals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+  },
+  monthlyGoals: {
+    get: (month: string) =>
+      fetchJson<MonthlyGoalsRecord | null>(`/api/monthly-goals?month=${month}`),
+    upsert: (data: { month: string; goals?: MonthlyGoal[]; monthReview?: string }) =>
+      fetchJson<MonthlyGoalsRecord>("/api/monthly-goals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+  },
+  monthStats: {
+    get: (month: string) =>
+      fetchJson<MonthStats>(`/api/month-stats?month=${month}`),
+  },
+  habits: {
+    list: (date: string) => fetchJson<Habit[]>(`/api/habits?date=${date}`),
+    create: (data: { name: string; description?: string; color?: string; targetFrequency?: string; customDays?: number[] }) =>
+      fetchJson<Habit>("/api/habits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Habit>) =>
+      fetchJson<Habit>(`/api/habits/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<void>(`/api/habits/${id}`, { method: "DELETE" }),
+    toggle: (data: { habitId: string; date: string; isCompleted: boolean }) =>
+      fetchJson<HabitLog>("/api/habit-logs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    logsRange: (startDate: string, endDate: string) =>
+      fetchJson<HabitLog[]>(`/api/habit-logs/range?startDate=${startDate}&endDate=${endDate}`),
   },
   coda: {
     getConfig: (projectId: string) =>

@@ -9,6 +9,7 @@ import {
   timestamp,
   primaryKey,
   index,
+  uniqueIndex,
   numeric,
 } from "drizzle-orm/pg-core";
 
@@ -380,5 +381,171 @@ export const codaSyncLog = pgTable(
   },
   (t) => [
     index("coda_log_config_id_idx").on(t.configId),
+  ]
+);
+
+export const wikiPages = pgTable(
+  "wiki_pages",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    content: text("content").notNull().default(""),
+    tags: text("tags").array().notNull().default([]),
+    parentPageId: text("parent_page_id"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("wiki_pages_user_id_idx").on(t.userId),
+    uniqueIndex("wiki_pages_user_slug_unique").on(t.userId, t.slug),
+  ]
+);
+
+export const timeBlocks = pgTable(
+  "time_blocks",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    date: text("date").notNull(), // "YYYY-MM-DD"
+    startTime: text("start_time").notNull(), // "HH:MM"
+    endTime: text("end_time").notNull(), // "HH:MM"
+    projectId: text("project_id").references(() => projects.id, { onDelete: "set null" }),
+    taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+    color: text("color"),
+    googleEventId: text("google_event_id"), // reserved for Phase 14
+    notes: text("notes"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("time_blocks_user_date_idx").on(t.userId, t.date),
+  ]
+);
+
+export const googleCalendarTokens = pgTable(
+  "google_calendar_tokens",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+    calendarId: text("calendar_id").notNull().default("primary"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("google_calendar_tokens_user_id_idx").on(t.userId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// Weekly Goals & Review (Phase 15)
+// ---------------------------------------------------------------------------
+
+export type WeeklyGoal = {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  order: number;
+};
+
+export const weeklyGoals = pgTable(
+  "weekly_goals",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    weekStart: text("week_start").notNull(), // "YYYY-MM-DD" (Monday)
+    goals: jsonb("goals").notNull().default([]).$type<WeeklyGoal[]>(),
+    weekReview: text("week_review"),
+    reviewedAt: bigint("reviewed_at", { mode: "number" }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("weekly_goals_user_week_unique").on(t.userId, t.weekStart),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// Monthly Goals & Review (Phase 16)
+// ---------------------------------------------------------------------------
+
+export type MonthlyGoal = {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  order: number;
+};
+
+export const monthlyGoals = pgTable(
+  "monthly_goals",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    month: text("month").notNull(), // "YYYY-MM"
+    goals: jsonb("goals").notNull().default([]).$type<MonthlyGoal[]>(),
+    monthReview: text("month_review"),
+    reviewedAt: bigint("reviewed_at", { mode: "number" }),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("monthly_goals_user_month_unique").on(t.userId, t.month),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// Habit Tracking (Phase 17)
+// ---------------------------------------------------------------------------
+
+export const habits = pgTable(
+  "habits",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id),
+    name: text("name").notNull(),
+    description: text("description"),
+    color: text("color").notNull().default("#6366F1"),
+    targetFrequency: text("target_frequency").notNull().default("daily"),
+    // "daily" | "weekdays" | "custom"
+    customDays: integer("custom_days").array(), // [0..6] (0=Sunday)
+    isActive: boolean("is_active").notNull().default(true),
+    order: integer("order").notNull().default(0),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("habits_user_id_idx").on(t.userId),
+  ]
+);
+
+export const habitLogs = pgTable(
+  "habit_logs",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id),
+    habitId: text("habit_id").notNull().references(() => habits.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // "YYYY-MM-DD"
+    isCompleted: boolean("is_completed").notNull().default(false),
+    notes: text("notes"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("habit_logs_habit_date_unique").on(t.habitId, t.date),
+    index("habit_logs_user_date_idx").on(t.userId, t.date),
   ]
 );

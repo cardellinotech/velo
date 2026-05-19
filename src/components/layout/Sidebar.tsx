@@ -8,6 +8,8 @@ import { api } from "@/lib/api";
 import {
   LayoutDashboard,
   CalendarDays,
+  CalendarRange,
+  BarChart3,
   FolderKanban,
   Receipt,
   FileText,
@@ -15,20 +17,33 @@ import {
   LogOut,
   ChevronRight,
   Zap,
+  Repeat,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const topNavItems = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+const planningNavItems = [
   { label: "My Day", href: "/my-day", icon: CalendarDays },
+  { label: "Woche", href: "/week", icon: CalendarRange },
+  { label: "Monat", href: "/month", icon: BarChart3 },
 ];
 
-const workNavItems = [
-  { label: "Projects", href: "/projects", icon: FolderKanban },
+const billingNavItems = [
   { label: "Billing", href: "/billing", icon: Receipt },
   { label: "Invoices", href: "/invoices", icon: FileText },
+];
+
+const settingsNavItems = [
   { label: "Settings", href: "/settings", icon: Settings },
+];
+
+const habitsNavItems = [
+  { label: "Gewohnheiten", href: "/habits", icon: Repeat },
+];
+
+const wikiNavItems = [
+  { label: "Wiki", href: "/wiki", icon: BookOpen },
 ];
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -84,46 +99,43 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3" aria-label="Main navigation">
-        <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
-          Menu
-        </p>
-        <ul className="flex flex-col gap-0.5">
-          {topNavItems.map(({ label, href, icon: Icon }) => (
-            <li key={href}>
-              <Link
-                href={href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
-                  isActive(href)
-                    ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
-                )}
-                aria-current={isActive(href) ? "page" : undefined}
-              >
-                <div className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
-                  isActive(href)
-                    ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
-                    : "text-slate-500 group-hover:text-slate-400"
-                )}>
-                  <Icon className="w-[18px] h-[18px]" />
-                </div>
-                {label}
-                {isActive(href) && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                )}
-              </Link>
-            </li>
-          ))}
+        {/* Dashboard — standalone, no section label */}
+        <ul className="flex flex-col gap-0.5 mb-5">
+          <li>
+            <Link
+              href="/"
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                isActive("/")
+                  ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+              )}
+              aria-current={isActive("/") ? "page" : undefined}
+            >
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                isActive("/")
+                  ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                  : "text-slate-500"
+              )}>
+                <LayoutDashboard className="w-[18px] h-[18px]" />
+              </div>
+              Dashboard
+              {isActive("/") && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+              )}
+            </Link>
+          </li>
         </ul>
 
-        <div className="mt-5 border-t border-white/[0.06] pt-5">
+        {/* PLANUNG */}
+        <div className="border-t border-white/[0.06] pt-5">
           <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
-            Work
+            Planung
           </p>
           <ul className="flex flex-col gap-0.5">
-            {workNavItems.map(({ label, href, icon: Icon }) => (
+            {planningNavItems.map(({ label, href, icon: Icon }) => (
               <li key={href}>
                 <Link
                   href={href}
@@ -154,48 +166,222 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </ul>
         </div>
 
-        {/* Active projects */}
-        {projects && projects.length > 0 && (
-          <div className="mt-6">
-            <div className="border-t border-white/[0.06] pt-5">
-              <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+        {/* PROJEKTE */}
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Projekte
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            <li>
+              <Link
+                href="/projects"
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                  isActive("/projects")
+                    ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                )}
+                aria-current={isActive("/projects") ? "page" : undefined}
+              >
+                <div className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                  isActive("/projects")
+                    ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                    : "text-slate-500 group-hover:text-slate-400"
+                )}>
+                  <FolderKanban className="w-[18px] h-[18px]" />
+                </div>
                 Projects
-              </p>
-              <ul className="flex flex-col gap-0.5">
-                {projects.map((project) => {
-                  const href = `/projects/${project.id}`;
-                  const active = pathname.startsWith(href);
-                  return (
-                    <li key={project.id}>
-                      <Link
-                        href={href}
-                        onClick={onClose}
-                        className={cn(
-                          "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150",
-                          active
-                            ? "text-white bg-white/[0.08] font-medium"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-2 h-2 rounded-full shrink-0 transition-all duration-150",
-                          active
-                            ? "bg-indigo-400 shadow-sm shadow-indigo-400/50"
-                            : "bg-slate-600 group-hover:bg-slate-500"
-                        )} />
-                        <span className="truncate">{project.name}</span>
-                        <ChevronRight className={cn(
-                          "w-3 h-3 shrink-0 ml-auto transition-all duration-150",
-                          active ? "text-slate-400 opacity-100" : "opacity-0 group-hover:opacity-60 text-slate-500"
-                        )} />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        )}
+                {isActive("/projects") && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                )}
+              </Link>
+            </li>
+          </ul>
+          {projects && projects.length > 0 && (
+            <ul className="flex flex-col gap-0.5 mt-0.5">
+              {projects.map((project) => {
+                const href = `/projects/${project.id}`;
+                const active = pathname.startsWith(href);
+                return (
+                  <li key={project.id}>
+                    <Link
+                      href={href}
+                      onClick={onClose}
+                      className={cn(
+                        "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150",
+                        active
+                          ? "text-white bg-white/[0.08] font-medium"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-2 h-2 rounded-full shrink-0 transition-all duration-150",
+                        active
+                          ? "bg-indigo-400 shadow-sm shadow-indigo-400/50"
+                          : "bg-slate-600 group-hover:bg-slate-500"
+                      )} />
+                      <span className="truncate">{project.name}</span>
+                      <ChevronRight className={cn(
+                        "w-3 h-3 shrink-0 ml-auto transition-all duration-150",
+                        active ? "text-slate-400 opacity-100" : "opacity-0 group-hover:opacity-60 text-slate-500"
+                      )} />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* GEWOHNHEITEN */}
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Gewohnheiten
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {habitsNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* WISSEN */}
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Wissen
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {wikiNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* ABRECHNUNG */}
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Abrechnung
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {billingNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* EINSTELLUNGEN */}
+        <div className="mt-5 border-t border-white/[0.06] pt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.1em]">
+            Einstellungen
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {settingsNavItems.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150",
+                    isActive(href)
+                      ? "text-white bg-white/[0.08] shadow-sm shadow-black/20"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                  )}
+                  aria-current={isActive(href) ? "page" : undefined}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150",
+                    isActive(href)
+                      ? "bg-gradient-to-br from-indigo-500/20 to-violet-500/20 text-indigo-400"
+                      : "text-slate-500 group-hover:text-slate-400"
+                  )}>
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                  {label}
+                  {isActive(href) && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
       {/* Logout */}

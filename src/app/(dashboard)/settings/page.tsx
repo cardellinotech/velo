@@ -1,6 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { BusinessSettingsForm } from "@/components/settings/BusinessSettingsForm";
+import { GoogleCalendarSettings } from "@/components/settings/GoogleCalendarSettings";
 
 export default function SettingsPage() {
   return (
@@ -12,6 +14,9 @@ export default function SettingsPage() {
         </p>
       </div>
       <BusinessSettingsForm />
+      <Suspense fallback={null}>
+        <GoogleCalendarSettings />
+      </Suspense>
     </div>
   );
 }

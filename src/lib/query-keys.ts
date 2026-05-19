@@ -51,4 +51,27 @@ export const queryKeys = {
     config: (projectId: string) => ["coda", "config", projectId] as const,
     history: (projectId: string) => ["coda", "config", projectId, "history"] as const,
   },
+  wiki: {
+    list: (params?: { tag?: string; search?: string }) => ["wiki", "list", params] as const,
+    detail: (slug: string) => ["wiki", "detail", slug] as const,
+  },
+  timeBlocks: {
+    byWeek: (weekStart: string) => ["time-blocks", "week", weekStart] as const,
+  },
+  weeklyGoals: {
+    byWeek: (weekStart: string) => ["weekly-goals", weekStart] as const,
+  },
+  monthlyGoals: {
+    byMonth: (month: string) => ["monthly-goals", month] as const,
+  },
+  monthStats: {
+    byMonth: (month: string) => ["month-stats", month] as const,
+  },
+  habits: {
+    list: (date: string) => ["habits", "list", date] as const,
+    detail: (id: string) => ["habits", id] as const,
+  },
+  habitLogs: {
+    range: (startDate: string, endDate: string) => ["habit-logs", "range", startDate, endDate] as const,
+  },
 } as const;

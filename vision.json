@@ -14,7 +14,7 @@
   },
   "product": {
     "name": "Velo",
-    "oneLiner": "Projektmanagement mit integriertem Time-Tracking und Abrechnung — ohne Bloat, für Freelancer.",
+    "oneLiner": "Projektmanagement, Time-Tracking, Abrechnung und persönliches LifeOS — ohne Bloat, für Freelancer.",
     "howItWorks": "Nutzer erstellen Projekte, legen Epics und Aufgaben (Stories, Tasks, Bugs, Incidents) an, verwalten sie auf einem Kanban Board und tracken ihre Zeit pro Aufgabe. Am Monatsende generiert Velo eine Abrechnungsübersicht der getrackten Stunden pro Kunde/Projekt.",
     "capabilities": [
       "Projekte anlegen und verwalten",
@@ -32,7 +32,13 @@
       "Recurring Tasks: Wiederkehrende Aufgaben mit flexiblen Intervallen (täglich/wöchentlich/monatlich), automatische Erstellung als eigenständige Task-Instanzen",
       "Vollständig responsive Web-App: Alle Seiten und Funktionen auf Mobile nutzbar, Kanban Board horizontal scrollbar, mobile-optimierte Navigation mit Hamburger-Menü",
       "Daily Planning (My Day): Eigene Seite zur Tagesplanung — bestehende Tasks aus Projekten zuweisen oder freie Einträge hinzufügen, per Drag & Drop priorisieren, Einträge als erledigt abhaken",
-      "Coda Time Sync: Zeiteinträge aus einer Coda-Tabelle (Task, Notes, Duration, Log Date, User) per manuellem Sync-Button nach Velo importieren, mit automatischem Mapping auf bestehende Projekte und Tasks, Duplikat-Erkennung und Sync-Historie"
+      "Coda Time Sync: Zeiteinträge aus einer Coda-Tabelle (Task, Notes, Duration, Log Date, User) per manuellem Sync-Button nach Velo importieren, mit automatischem Mapping auf bestehende Projekte und Tasks, Duplikat-Erkennung und Sync-Historie",
+      "Wissensdatenbank (Wiki): Verlinkbare Markdown-Seiten mit Tags und Volltext-Suche",
+      "Wochenplanung: Zeitblöcke-Kalender (Mo-So, 08-20 Uhr) mit Projekt-Integration und Google Calendar Sync",
+      "Monatsplanung: Monatsziele, aggregiertes Dashboard (Stunden, Einnahmen, Tasks)",
+      "Wochenziele: Top-3-5 Wochenziele mit Rückblick-Workflow",
+      "Gewohnheits-Tracking: Tägliche Habits mit Streak-Berechnung und GitHub-style Heatmap",
+      "Google Calendar Integration: Bidirektionaler Sync — Termine lesen, Zeitblöcke schreiben"
     ],
     "platform": "Web-App (Next.js)",
     "differentiation": "Gebaut für Freelancer, nicht für Enterprises. Kein Feature-Bloat, keine 200 Einstellungen — nur was du wirklich brauchst.",

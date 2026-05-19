@@ -6,6 +6,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { DailyPlanList } from "@/components/daily-plan/DailyPlanList";
 import { QuickAddInput } from "@/components/daily-plan/QuickAddInput";
 import { TaskPickerDialog } from "@/components/daily-plan/TaskPickerDialog";
+import { HabitCheckIn } from "@/components/daily-plan/HabitCheckIn";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addDays, subDays, isToday } from "date-fns";
 import { useState } from "react";
@@ -92,6 +93,9 @@ export default function MyDayPage() {
           onClose={() => setPickerOpen(false)}
           dateStr={dateStr}
         />
+
+        {/* Habit check-in */}
+        <HabitCheckIn date={dateStr} />
       </div>
     </div>
   );

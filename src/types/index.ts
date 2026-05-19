@@ -141,6 +141,78 @@ export interface User {
   createdAt: number;
 }
 
+export type WikiPage = {
+  id: string;
+  userId: string;
+  title: string;
+  slug: string;
+  content: string;
+  tags: string[];
+  parentPageId: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type TimeBlock = {
+  id: string;
+  userId: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  projectId: string | null;
+  taskId: string | null;
+  color: string | null;
+  googleEventId: string | null;
+  notes: string | null;
+  createdAt: number;
+  updatedAt: number;
+  // Enriched fields:
+  projectName?: string | null;
+  projectColor?: string | null;
+};
+
+export type GoogleCalendarEvent = {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isGoogleEvent: true;
+};
+
+export type WeeklyGoalsRecord = {
+  id: string;
+  userId: string;
+  weekStart: string;
+  goals: Array<{ id: string; text: string; isCompleted: boolean; order: number }>;
+  weekReview: string | null;
+  reviewedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type MonthlyGoal = { id: string; text: string; isCompleted: boolean; order: number };
+
+export type MonthlyGoalsRecord = {
+  id: string;
+  userId: string;
+  month: string;
+  goals: MonthlyGoal[];
+  monthReview: string | null;
+  reviewedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type MonthStats = {
+  totalHours: number;
+  totalRevenue: number;
+  totalTasks: number;
+  completedTasks: number;
+  activeProjects: number;
+};
+
 export interface BillingEntry {
   id: string;
   taskId: string;
@@ -157,3 +229,29 @@ export interface BillingEntry {
   description: string | null;
   hourlyRate: string | null;
 }
+
+export type Habit = {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  color: string;
+  targetFrequency: string;
+  customDays: number[] | null;
+  isActive: boolean;
+  order: number;
+  createdAt: number;
+  // Computed by server:
+  todayCompleted?: boolean;
+  streak?: number;
+};
+
+export type HabitLog = {
+  id: string;
+  userId: string;
+  habitId: string;
+  date: string;
+  isCompleted: boolean;
+  notes: string | null;
+  createdAt: number;
+};
