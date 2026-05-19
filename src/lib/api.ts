@@ -16,6 +16,8 @@ import type {
   MonthlyGoal,
   MonthlyGoalsRecord,
   MonthStats,
+  Habit,
+  HabitLog,
 } from "@/types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -351,6 +353,18 @@ export const api = {
   monthStats: {
     get: (month: string) =>
       fetchJson<MonthStats>(`/api/month-stats?month=${month}`),
+  },
+  habits: {
+    list: (date: string) => fetchJson<Habit[]>(`/api/habits?date=${date}`),
+    create: (data: { name: string; description?: string; color?: string; targetFrequency?: string; customDays?: number[] }) =>
+      fetchJson<Habit>("/api/habits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Habit>) =>
+      fetchJson<Habit>(`/api/habits/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<void>(`/api/habits/${id}`, { method: "DELETE" }),
+    toggle: (data: { habitId: string; date: string; isCompleted: boolean }) =>
+      fetchJson<HabitLog>("/api/habit-logs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+    logsRange: (startDate: string, endDate: string) =>
+      fetchJson<HabitLog[]>(`/api/habit-logs/range?startDate=${startDate}&endDate=${endDate}`),
   },
   coda: {
     getConfig: (projectId: string) =>

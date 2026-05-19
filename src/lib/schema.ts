@@ -508,3 +508,44 @@ export const monthlyGoals = pgTable(
     uniqueIndex("monthly_goals_user_month_unique").on(t.userId, t.month),
   ]
 );
+
+// ---------------------------------------------------------------------------
+// Habit Tracking (Phase 17)
+// ---------------------------------------------------------------------------
+
+export const habits = pgTable(
+  "habits",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id),
+    name: text("name").notNull(),
+    description: text("description"),
+    color: text("color").notNull().default("#6366F1"),
+    targetFrequency: text("target_frequency").notNull().default("daily"),
+    // "daily" | "weekdays" | "custom"
+    customDays: integer("custom_days").array(), // [0..6] (0=Sunday)
+    isActive: boolean("is_active").notNull().default(true),
+    order: integer("order").notNull().default(0),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    index("habits_user_id_idx").on(t.userId),
+  ]
+);
+
+export const habitLogs = pgTable(
+  "habit_logs",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull().references(() => users.id),
+    habitId: text("habit_id").notNull().references(() => habits.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // "YYYY-MM-DD"
+    isCompleted: boolean("is_completed").notNull().default(false),
+    notes: text("notes"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("habit_logs_habit_date_unique").on(t.habitId, t.date),
+    index("habit_logs_user_date_idx").on(t.userId, t.date),
+  ]
+);

@@ -229,3 +229,29 @@ export interface BillingEntry {
   description: string | null;
   hourlyRate: string | null;
 }
+
+export type Habit = {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  color: string;
+  targetFrequency: string;
+  customDays: number[] | null;
+  isActive: boolean;
+  order: number;
+  createdAt: number;
+  // Computed by server:
+  todayCompleted?: boolean;
+  streak?: number;
+};
+
+export type HabitLog = {
+  id: string;
+  userId: string;
+  habitId: string;
+  date: string;
+  isCompleted: boolean;
+  notes: string | null;
+  createdAt: number;
+};

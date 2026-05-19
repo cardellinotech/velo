@@ -67,4 +67,11 @@ export const queryKeys = {
   monthStats: {
     byMonth: (month: string) => ["month-stats", month] as const,
   },
+  habits: {
+    list: (date: string) => ["habits", "list", date] as const,
+    detail: (id: string) => ["habits", id] as const,
+  },
+  habitLogs: {
+    range: (startDate: string, endDate: string) => ["habit-logs", "range", startDate, endDate] as const,
+  },
 } as const;
