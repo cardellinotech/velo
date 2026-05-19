@@ -614,6 +614,96 @@
 
 ---
 
+## Phase 12: Wissensdatenbank (Wiki)
+
+**Goal:** Verlinkbare Wiki-Seiten mit Markdown, Tags und Volltext-Suche.
+
+**Status:** 0/5 tasks complete
+
+- [ ] **TASK-122** — Add wiki_pages table to schema
+- [ ] **TASK-123** — Implement wiki API routes (list, get, create, update, delete)
+- [ ] **TASK-124** — Build wiki pages (list view, view page, edit page)
+- [ ] **TASK-125** — Build WikiEditor and WikiRenderer components
+- [ ] **TASK-126** — Add Wiki to sidebar navigation
+
+---
+
+## Phase 13: Wochenübersicht
+
+**Goal:** Zeitblöcke-Kalender (Mo-So, 08–20 Uhr) mit Projekt-Integration.
+
+**Status:** 0/6 tasks complete
+
+- [ ] **TASK-127** — Add week_blocks table to schema
+- [ ] **TASK-128** — Implement week blocks mutations and queries
+- [ ] **TASK-129** — Build week calendar grid component (Mo–So, 08–20 Uhr)
+- [ ] **TASK-130** — Implement drag & drop for time block creation and resizing
+- [ ] **TASK-131** — Add project/task linking to time blocks
+- [ ] **TASK-132** — Add Woche to sidebar navigation
+
+---
+
+## Phase 14: Google Calendar Integration
+
+**Goal:** Bidirektionaler Sync — Termine aus Google Calendar lesen, Zeitblöcke schreiben.
+
+**Status:** 0/7 tasks complete
+
+- [ ] **TASK-133** — Set up Google OAuth credentials and scopes
+- [ ] **TASK-134** — Add google_calendar_tokens table to schema
+- [ ] **TASK-135** — Implement OAuth flow (connect/disconnect calendar)
+- [ ] **TASK-136** — Implement read action: fetch events from Google Calendar
+- [ ] **TASK-137** — Implement write action: push Velo time blocks to Google Calendar
+- [ ] **TASK-138** — Build sync UI in Settings (connect button, sync status, last sync)
+- [ ] **TASK-139** — Handle edge cases (token refresh, conflicts, deleted events)
+
+---
+
+## Phase 15: Wochenziele
+
+**Goal:** Top-3-5 Wochenziele pro Woche mit Rückblick-Workflow.
+
+**Status:** 0/4 tasks complete
+
+- [ ] **TASK-140** — Add week_goals table to schema
+- [ ] **TASK-141** — Implement week goals mutations and queries
+- [ ] **TASK-142** — Build Wochenziele UI (goal list, add/edit/complete, week navigation)
+- [ ] **TASK-143** — Build Wochenrückblick modal (review last week's goals before setting new ones)
+
+---
+
+## Phase 16: Monatsplanung
+
+**Goal:** Monatsziele und aggregiertes Dashboard (Stunden, Einnahmen, Tasks).
+
+**Status:** 0/6 tasks complete
+
+- [ ] **TASK-144** — Add month_goals table to schema
+- [ ] **TASK-145** — Implement month goals mutations and queries
+- [ ] **TASK-146** — Build Monatsziele UI (goal list with progress, month navigation)
+- [ ] **TASK-147** — Build aggregated dashboard: tracked hours per month per project
+- [ ] **TASK-148** — Add invoiced revenue aggregation to dashboard
+- [ ] **TASK-149** — Add Monat to sidebar navigation
+
+---
+
+## Phase 17: Gewohnheits-Tracking
+
+**Goal:** Tägliche Habits mit Streak-Berechnung und GitHub-style Heatmap.
+
+**Status:** 0/8 tasks complete
+
+- [ ] **TASK-150** — Add habits and habit_logs tables to schema
+- [ ] **TASK-151** — Implement habits mutations and queries (create, update, delete, archive)
+- [ ] **TASK-152** — Implement habit_logs mutations and queries (check-in, uncheck, get by date range)
+- [ ] **TASK-153** — Implement streak calculation (current streak, longest streak)
+- [ ] **TASK-154** — Build Gewohnheiten list page (today's habits, check-off UI)
+- [ ] **TASK-155** — Build GitHub-style heatmap component (52 weeks × 7 days)
+- [ ] **TASK-156** — Build habit detail page (stats, heatmap, streak info)
+- [ ] **TASK-157** — Add Gewohnheiten to sidebar navigation
+
+---
+
 ## Agent Session Guide
 
 ### How to Structure Coding Sessions
