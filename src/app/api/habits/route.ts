@@ -4,6 +4,11 @@ import { requireAuth } from "@/lib/session";
 import { habits, habitLogs } from "@/lib/schema";
 import { eq, and, asc, desc, gte, lte, sql } from "drizzle-orm";
 
+function subtractDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+}
+
 function handleError(e: unknown) {
   if (e instanceof Error && e.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (e instanceof Error && e.message === "NOT_FOUND") return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -50,7 +55,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Yesterday
-    const yesterday = new Date(new Date(date).getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const yesterday = subtractDay(date);
 
     const result = allHabits.map((habit) => {
       const logs = logsByHabit.get(habit.id) ?? [];
@@ -71,9 +76,7 @@ export async function GET(req: NextRequest) {
         if (log.date === currentDate && log.isCompleted) {
           streak++;
           // Step back one day
-          const d = new Date(currentDate);
-          d.setDate(d.getDate() - 1);
-          currentDate = d.toISOString().slice(0, 10);
+          currentDate = subtractDay(currentDate);
         } else if (log.date === currentDate && !log.isCompleted) {
           break;
         }

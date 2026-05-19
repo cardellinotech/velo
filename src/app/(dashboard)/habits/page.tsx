@@ -31,6 +31,7 @@ export default function HabitsPage() {
       api.habits.toggle(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.habits.list(today) });
+      void queryClient.invalidateQueries({ queryKey: ["habit-logs", "range"] });
     },
     onError: () => toast.error("Fehler beim Aktualisieren der Gewohnheit"),
   });

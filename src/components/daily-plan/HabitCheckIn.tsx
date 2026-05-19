@@ -36,6 +36,7 @@ export function HabitCheckIn({ date }: HabitCheckInProps) {
       api.habits.toggle(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.habits.list(date) });
+      void queryClient.invalidateQueries({ queryKey: ["habit-logs", "range"] });
     },
     onError: () => toast.error("Fehler beim Aktualisieren der Gewohnheit"),
   });

@@ -14,8 +14,9 @@ const WEEK_COUNT = 12;
 const DAY_COUNT = WEEK_COUNT * 7; // 84 days
 
 export function HabitHeatmap({ habitId, habitColor }: HabitHeatmapProps) {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const startDate = format(subDays(new Date(), DAY_COUNT - 1), "yyyy-MM-dd");
+  const now = new Date();
+  const today = format(now, "yyyy-MM-dd");
+  const startDate = format(subDays(now, DAY_COUNT - 1), "yyyy-MM-dd");
 
   const { data: logs, isLoading } = useQuery({
     queryKey: queryKeys.habitLogs.range(startDate, today),
@@ -36,7 +37,7 @@ export function HabitHeatmap({ habitId, habitColor }: HabitHeatmapProps) {
   // Start from the earliest date
   const cells: { date: string; completed: boolean }[] = [];
   for (let i = DAY_COUNT - 1; i >= 0; i--) {
-    const date = format(subDays(startOfDay(new Date()), i), "yyyy-MM-dd");
+    const date = format(subDays(startOfDay(now), i), "yyyy-MM-dd");
     cells.push({ date, completed: completedDates.has(date) });
   }
 

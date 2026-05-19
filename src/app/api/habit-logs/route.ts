@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       })
       .onConflictDoUpdate({
         target: [habitLogs.habitId, habitLogs.date],
-        set: { isCompleted: sql`excluded.is_completed` },
+        set: { isCompleted: sql`excluded.is_completed`, userId: sql`excluded.user_id` },
       })
       .returning();
 
