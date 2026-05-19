@@ -23,6 +23,8 @@ export function WeeklyGoalsPanel({ weekStart, onReviewClick }: WeeklyGoalsPanelP
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const isWeekEnd = [0, 5, 6].includes(new Date().getDay());
+
   const { data: record } = useQuery({
     queryKey: queryKeys.weeklyGoals.byWeek(weekStart),
     queryFn: () => api.weeklyGoals.get(weekStart),
@@ -220,7 +222,11 @@ export function WeeklyGoalsPanel({ weekStart, onReviewClick }: WeeklyGoalsPanelP
         {/* Weekly review button */}
         <button
           onClick={onReviewClick}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white transition-all"
+          className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-all ${
+            isWeekEnd
+              ? "bg-amber-900/30 border border-amber-700/50 text-amber-300 hover:bg-amber-900/50 hover:text-amber-200"
+              : "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white"
+          }`}
         >
           <ClipboardList className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
           <span>Wochenrückblick</span>
