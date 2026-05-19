@@ -23,12 +23,10 @@ export function MonthReviewDialog({ open, onClose, month, record }: MonthReviewD
   const [reviewText, setReviewText] = useState(record?.monthReview ?? "");
   const [saving, setSaving] = useState(false);
 
-  // Sync reviewText when record changes or dialog opens
+  // Sync reviewText when the stored review text changes
   useEffect(() => {
-    if (open) {
-      setReviewText(record?.monthReview ?? "");
-    }
-  }, [open, record?.monthReview]);
+    setReviewText(record?.monthReview ?? "");
+  }, [record?.monthReview]);
 
   if (!open) return null;
 

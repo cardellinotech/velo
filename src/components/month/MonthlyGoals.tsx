@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Plus, X, CheckCircle2, Circle, ClipboardList } from "lucide-react";
 import { queryKeys } from "@/lib/query-keys";
 import { api } from "@/lib/api";
@@ -22,9 +23,12 @@ export function MonthlyGoals({ month, onReviewClick }: MonthlyGoalsProps) {
   const [editingText, setEditingText] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const submittedRef = useRef(false);
 
-  // Highlighted if today is in the last week of the month (day >= 22)
-  const isMonthEnd = new Date().getDate() >= 22;
+  // Highlighted only when viewing the current month AND it's late in the month (day >= 22)
+  const today = new Date();
+  const currentMonth = format(today, "yyyy-MM");
+  const isMonthEnd = month === currentMonth && today.getDate() >= 22;
 
   const { data: record } = useQuery({
     queryKey: queryKeys.monthlyGoals.byMonth(month),
@@ -175,13 +179,20 @@ export function MonthlyGoals({ month, onReviewClick }: MonthlyGoalsProps) {
               value={newGoalText}
               onChange={(e) => setNewGoalText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") addGoal();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submittedRef.current = true;
+                  if (newGoalText.trim()) addGoal();
+                  else { setAddingGoal(false); setNewGoalText(""); }
+                }
                 if (e.key === "Escape") {
+                  submittedRef.current = true;
                   setAddingGoal(false);
                   setNewGoalText("");
                 }
               }}
               onBlur={() => {
+                if (submittedRef.current) { submittedRef.current = false; return; }
                 if (!newGoalText.trim()) {
                   setAddingGoal(false);
                   setNewGoalText("");

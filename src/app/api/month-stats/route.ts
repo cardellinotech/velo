@@ -25,13 +25,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "month query param required" }, { status: 400 });
     }
 
-    // Compute Unix ms range for the month
-    const startMs = new Date(month + "-01").getTime();
+    // Compute Unix ms range for the month using explicit local-time construction
+    // to avoid UTC-offset issues with ISO string parsing (e.g. new Date("2024-01-01"))
     const [year, mon] = month.split("-").map(Number);
-    const nextMonthDate = mon === 12
-      ? new Date(year + 1, 0, 1)
-      : new Date(year, mon, 1);
-    const endMs = nextMonthDate.getTime() - 1;
+    const startMs = new Date(year, mon - 1, 1).getTime();
+    const endMs = new Date(year, mon, 1).getTime() - 1;
 
     // Query time entries in range
     const timeEntriesInMonth = await db
@@ -88,7 +86,9 @@ export async function GET(req: NextRequest) {
 
     const totalTasks = tasksInMonth.length;
     const completedTasks = tasksInMonth.filter((t) => t.status === "done").length;
-    const activeProjects = new Set(tasksInMonth.map((t) => t.projectId)).size;
+    const activeProjects = new Set(
+      tasksInMonth.map((t) => t.projectId).filter((id): id is string => id != null)
+    ).size;
 
     return NextResponse.json({
       totalHours: Math.round(totalHours * 100) / 100,
